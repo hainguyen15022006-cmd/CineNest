@@ -1,0 +1,78 @@
+/* Kiểu dùng chung (Dương – shared/). Responsive từ 360px (đặc tả trang 10). Không dùng framework. */
+:root {
+  --bg: #f6f7f9; --card: #ffffff; --text: #1f2933; --muted: #5f6b7a; --line: #e2e8f0;
+  --brand: #1b6a78; --brand-dark: #14213d; --ok: #1e7f4f; --warn: #b7791f; --err: #c0392b;
+  --radius: 10px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text); line-height: 1.45; }
+a { color: var(--brand); }
+main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 1.5rem; margin: 8px 0 16px; color: var(--brand-dark); }
+h2 { font-size: 1.1rem; margin: 20px 0 8px; color: var(--brand); }
+
+#app-header { background: var(--brand-dark); color: #fff; }
+#app-header .wrap { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+#app-header .brand { color: #fff; font-weight: 700; text-decoration: none; font-size: 1.1rem; }
+#app-header nav { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+#app-header nav a { color: #dbe7ea; text-decoration: none; padding: 4px 0; }
+#app-header nav a:hover, #app-header nav a:focus { color: #fff; text-decoration: underline; }
+#app-header .me { margin-left: auto; display: flex; gap: 8px; align-items: center; font-size: .9rem; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+.grid { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.row { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: end; }
+.muted { color: var(--muted); font-size: .9rem; }
+.right { text-align: right; }
+
+label { display: block; font-size: .9rem; color: var(--muted); margin-bottom: 4px; }
+input, select, textarea { font: inherit; padding: 8px 10px; border: 1px solid #c7d0da; border-radius: 6px; width: 100%; background: #fff; }
+input:user-invalid { border-color: var(--err); }
+.field { margin-bottom: 10px; }
+.field .hint, .error-text { font-size: .85rem; }
+.error-text { color: var(--err); }
+
+button, .btn { font: inherit; padding: 8px 14px; border-radius: 6px; border: 1px solid var(--brand); background: var(--brand); color: #fff; cursor: pointer; text-decoration: none; display: inline-block; }
+button:disabled { opacity: .6; cursor: wait; }
+button.secondary, .btn.secondary { background: #fff; color: var(--brand); }
+button.danger { background: var(--err); border-color: var(--err); }
+button.small, .btn.small { padding: 4px 10px; font-size: .85rem; }
+
+table { width: 100%; border-collapse: collapse; background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid var(--line); vertical-align: top; font-size: .93rem; }
+th { background: #e3eef1; color: #2d3748; font-weight: 600; }
+.table-wrap { overflow-x: auto; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: .8rem; border: 1px solid var(--line); background: #eef2f6; }
+.badge-CONFIRMED, .badge-PENDING, .badge-PENDING_APPROVAL { background: #e6f0ff; border-color: #b3ccff; }
+.badge-IN_USE, .badge-PREPARING { background: #fff4d6; border-color: #f2d48a; }
+.badge-COMPLETED, .badge-PAID, .badge-READY, .badge-SERVED, .badge-APPROVED { background: #e2f5ea; border-color: #a9dfc1; }
+.badge-CANCELLED, .badge-NO_SHOW, .badge-UNAVAILABLE, .badge-REJECTED { background: #fde8e6; border-color: #f5b5ae; }
+.badge-UNPAID, .badge-WAIVED { background: #f3e8ff; border-color: #d6bcfa; }
+
+.state { padding: 24px; text-align: center; color: var(--muted); }
+.state-error { color: var(--err); }
+
+#toast-box { position: fixed; right: 12px; bottom: 12px; display: flex; flex-direction: column; gap: 8px; z-index: 100; max-width: min(90vw, 360px); }
+.toast { background: #2d3748; color: #fff; padding: 10px 14px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,.2); }
+.toast-success { background: var(--ok); }
+.toast-error { background: var(--err); }
+
+/* Lịch ngày theo phòng (staff/schedule) */
+.schedule { display: grid; grid-template-columns: 140px repeat(28, minmax(28px, 1fr)); font-size: .75rem; }
+.schedule .cell { border: 1px solid var(--line); min-height: 34px; background: #fff; }
+.schedule .head { background: #e3eef1; text-align: center; padding: 4px 0; font-weight: 600; }
+.schedule .room { padding: 6px; font-weight: 600; background: #f8fafc; }
+.schedule .slot { display: block; color: #fff; text-decoration: none; padding: 2px 4px; min-height: 34px; }
+.slot-CONFIRMED { background: #3b6fd8; } .slot-IN_USE { background: #d69e2e; } .slot-COMPLETED { background: #38a169; }
+.slot-cleanup { background: #cbd5e0; }
+
+.steps { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.steps span { padding: 4px 10px; border-radius: 999px; background: #e2e8f0; font-size: .85rem; }
+.steps span.active { background: var(--brand); color: #fff; }
+.hidden { display: none !important; }
+
+@media (max-width: 480px) {
+  main { padding: 10px; }
+  th, td { padding: 6px; font-size: .85rem; }
+}

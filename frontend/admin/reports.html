@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Báo cáo – CineNest</title>
+</head>
+<body>
+  <!-- Chủ sở hữu: Công Thành (người 6) · Đặc tả: trang 10 – booking theo ngày, doanh thu đã thu, giờ phòng, chưa thu và miễn -->
+  <header id="app-header"></header>
+  <main>
+    <h1>Báo cáo</h1>
+
+    <form id="range-form" class="row"><div class="field"><label for="from">Từ ngày</label><input id="from" name="from" type="date"></div><div class="field"><label for="to">Đến ngày</label><input id="to" name="to" type="date"></div><div class="field"><button type="submit">Xem</button></div></form>
+    <h2>Booking theo ngày bắt đầu và trạng thái</h2><div id="bookings" class="table-wrap"></div>
+    <h2>Doanh thu đã thu (theo ngày thanh toán)</h2><div id="revenue" class="table-wrap"></div>
+    <h2>Giờ phòng đã sử dụng (COMPLETED)</h2><div id="hours" class="table-wrap"></div>
+    <h2>Chưa thu và miễn</h2><div id="unpaid" class="table-wrap"></div>
+  </main>
+  <script type="module" src="./reports.ts"></script>
+</body>
+</html>

@@ -1,0 +1,22 @@
+# PostgreSQL 16 cho phát triển và đo tải. Chạy: docker compose up -d
+services:
+  db:
+    image: postgres:16
+    container_name: moviecafe-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: moviecafe
+      TZ: Asia/Ho_Chi_Minh
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d moviecafe"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+volumes:
+  pgdata:

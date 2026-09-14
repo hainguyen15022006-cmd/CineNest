@@ -1,0 +1,34 @@
+{
+  "name": "cinenest-booking-system",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CineNest – hệ thống đặt phòng café phim, đồ án cuối kỳ Phát triển web (đặc tả v1.7)",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace backend & npm run dev --workspace frontend",
+    "dev:api": "npm run dev --workspace backend",
+    "dev:web": "npm run dev --workspace frontend",
+    "build": "npm run build --workspace frontend",
+    "typecheck": "npm run typecheck --workspace backend && npm run typecheck --workspace frontend",
+    "test": "npm test --workspace backend",
+    "test:e2e": "playwright test",
+    "db:generate": "npm run db:generate --workspace backend",
+    "db:migrate": "npm run db:migrate --workspace backend",
+    "db:seed": "npm run db:seed --workspace backend",
+    "db:reset": "npm run db:reset --workspace backend",
+    "db:test:setup": "npm run db:test:setup --workspace backend",
+    "start": "npm run start --workspace backend",
+    "db:migrate:dev": "npm run db:migrate:dev --workspace backend",
+    "db:import-movies": "npm run db:import-movies --workspace backend --"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "prettier": "^3.6.2"
+  }
+}

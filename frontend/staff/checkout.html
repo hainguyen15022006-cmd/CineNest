@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Hóa đơn và thu tiền – CineNest</title>
+</head>
+<body>
+  <!-- Chủ sở hữu: Công Thành (người 6) · Đặc tả: trang 7, 8 – Tổng gốc, Điều chỉnh (chỉ APPROVED), Số phải trả; kết thúc sớm; đề nghị giảm/miễn; chưa thu -->
+  <header id="app-header"></header>
+  <main>
+    <h1>Hóa đơn và thu tiền</h1>
+
+    <div id="invoice" class="card"></div>
+    <div class="row" id="actions"></div>
+    <section class="card"><h2>Kết thúc sớm (EX01)</h2>
+      <form id="end-form" class="row"><div class="field" style="flex:1"><label for="reason">Lý do</label><input id="reason" name="reason" required maxlength="300"></div><div class="field"><button type="submit" class="danger">Kết thúc sớm</button></div></form>
+    </section>
+    <section class="card"><h2>Đề nghị giảm / miễn (EX03, EX04 – chờ quản lý duyệt)</h2>
+      <form id="adj-form" class="row">
+        <div class="field"><label for="kind">Loại</label><select id="kind" name="kind"><option value="REDUCE">Giảm một phần</option><option value="WAIVE">Miễn toàn bộ</option></select></div>
+        <div class="field"><label for="amountVnd">Số tiền giảm (VND)</label><input id="amountVnd" name="amountVnd" type="number" min="1000" step="1000"></div>
+        <div class="field" style="flex:1"><label for="adjReason">Lý do</label><input id="adjReason" name="reason" required maxlength="300"></div>
+        <div class="field"><button type="submit" class="secondary">Gửi đề nghị</button></div>
+      </form>
+    </section>
+    <section class="card"><h2>Thu tiền</h2>
+      <form id="pay-form" class="row"><div class="field"><label for="method">Phương thức</label><select id="method" name="method"><option value="CASH">Tiền mặt</option><option value="TRANSFER">Chuyển khoản</option></select></div><div class="field"><button type="submit" id="btn-pay">Ghi nhận đã thu</button></div></form>
+    </section>
+  </main>
+  <script type="module" src="./checkout.ts"></script>
+</body>
+</html>

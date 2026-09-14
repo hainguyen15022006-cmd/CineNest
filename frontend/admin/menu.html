@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản lý menu – CineNest</title>
+</head>
+<body>
+  <!-- Chủ sở hữu: Sơn (người 5) · Đặc tả: trang 7 – CRUD món -->
+  <header id="app-header"></header>
+  <main>
+    <h1>Quản lý menu</h1>
+
+    <form id="menu-form" class="card"><h2>Thêm / sửa món</h2><input type="hidden" name="id">
+      <div class="row">
+        <div class="field"><label for="name">Tên món</label><input id="name" name="name" required></div>
+        <div class="field"><label for="category">Danh mục</label><select id="category" name="category"><option value="DRINK">Đồ uống</option><option value="SNACK">Ăn vặt</option><option value="FOOD">Món chính</option></select></div>
+        <div class="field"><label for="priceVnd">Giá (VND)</label><input id="priceVnd" name="priceVnd" type="number" min="0" step="1000" required></div>
+        <div class="field"><label for="isActive">Đang bán</label><select id="isActive" name="isActive"><option value="true">Có</option><option value="false">Không</option></select></div>
+      </div>
+      <div class="field"><label for="imageUrl">URL ảnh</label><input id="imageUrl" name="imageUrl"></div>
+      <div class="row"><button type="submit">Lưu</button><button type="button" class="secondary" id="btn-reset">Tạo mới</button></div>
+    </form>
+    <div id="list" class="table-wrap"></div>
+  </main>
+  <script type="module" src="./menu.ts"></script>
+</body>
+</html>

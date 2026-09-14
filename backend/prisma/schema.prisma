@@ -1,0 +1,354 @@
+// =====================================================================
+// CineNest Booking System – schema PostgreSQL (đặc tả v1.7, trang 11)
+// Dương (người 1) kiểm tra thay đổi; Hải Anh (người 3) giữ quyền merge; mỗi module đề xuất
+// thay đổi qua pull request. KHÔNG sửa trực tiếp trên nhánh main.
+//
+// Những ràng buộc Prisma không biểu diễn được (EXCLUDE chống trùng,
+// CHECK, unique partial index, cột sinh của session) nằm trong
+// prisma/migrations/20260914000002_constraints/migration.sql (Phụ lục A).
+// =====================================================================
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ----------------------------- Enum ----------------------------------
+
+enum Role {
+  CUSTOMER
+  STAFF
+  MANAGER
+}
+
+/// Trạng thái sử dụng phòng (trang 5). Tách riêng khỏi trạng thái tiền.
+enum BookingStatus {
+  CONFIRMED
+  IN_USE
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+/// Trạng thái thanh toán (trang 5).
+enum PaymentStatus {
+  UNPAID
+  PAID
+  WAIVED
+}
+
+enum BookingSource {
+  ONLINE
+  COUNTER
+}
+
+/// Trạng thái chuẩn bị phim (trang 6).
+enum PreparationStatus {
+  NOT_SELECTED
+  PENDING
+  READY
+  UNAVAILABLE
+}
+
+/// Trạng thái đơn món (trang 7).
+enum FoodOrderStatus {
+  PENDING
+  PREPARING
+  SERVED
+  CANCELLED
+}
+
+enum MenuCategory {
+  DRINK
+  SNACK
+  FOOD
+}
+
+enum AdjustmentKind {
+  REDUCE
+  WAIVE
+}
+
+enum AdjustmentStatus {
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+}
+
+enum PaymentMethod {
+  CASH
+  TRANSFER
+}
+
+enum IdempotencyStatus {
+  IN_PROGRESS
+  DONE
+}
+
+// ----------------------------- Bảng ----------------------------------
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  phone        String
+  passwordHash String   @map("password_hash")
+  role         Role     @default(CUSTOMER)
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  bookings         Booking[]              @relation("BookingCustomer")
+  createdBookings  Booking[]              @relation("BookingCreator")
+  foodOrders       FoodOrder[]
+  adjustmentsMade  Adjustment[]           @relation("AdjustmentCreator")
+  adjustmentsDone  Adjustment[]           @relation("AdjustmentApprover")
+  payments         Payment[]
+  statusChanges    BookingStatusHistory[]
+  idempotencyKeys  IdempotencyRequest[]
+
+  @@map("user")
+}
+
+/// Bảng phiên theo schema mặc định của connect-pg-simple (sid, sess, expire).
+/// Cột user_id là CỘT SINH (GENERATED ALWAYS AS (sess->>'userId')) tạo trong
+/// migration 0002 – chỉ đọc, không bao giờ ghi từ ứng dụng.
+model Session {
+  sid    String   @id
+  sess   Json     @db.Json
+  expire DateTime @db.Timestamp(6)
+  userId Int?     @map("user_id")
+
+  @@index([expire], map: "IDX_session_expire")
+  @@index([userId])
+  @@map("session")
+}
+
+model LoginAttempt {
+  id          Int      @id @default(autoincrement())
+  email       String
+  ip          String
+  succeeded   Boolean
+  attemptedAt DateTime @default(now()) @map("attempted_at") @db.Timestamptz(6)
+
+  @@index([email, attemptedAt])
+  @@index([ip, attemptedAt])
+  @@map("login_attempt")
+}
+
+model Room {
+  id             Int         @id @default(autoincrement())
+  name           String
+  capacity       Int
+  description    String      @default("")
+  amenities      Json        @default("[]")
+  hourlyPriceVnd Int         @map("hourly_price_vnd")
+  isActive       Boolean     @default(true) @map("is_active")
+  images         RoomImage[]
+  bookings       Booking[]
+
+  @@map("room")
+}
+
+model RoomImage {
+  id        Int    @id @default(autoincrement())
+  roomId    Int    @map("room_id")
+  url       String
+  sortOrder Int    @default(0) @map("sort_order")
+  room      Room   @relation(fields: [roomId], references: [id])
+
+  @@index([roomId, sortOrder])
+  @@map("room_image")
+}
+
+model Movie {
+  id              Int       @id @default(autoincrement())
+  source          String?
+  externalId      String?   @map("external_id")
+  title           String
+  genre           String
+  durationMinutes Int       @map("duration_minutes")
+  ageLabel        String    @map("age_label")
+  description     String    @default("")
+  posterUrl       String?   @map("poster_url")
+  isActive        Boolean   @default(true) @map("is_active")
+  bookings        Booking[]
+
+  @@unique([source, externalId])
+  @@map("movie")
+}
+
+model Booking {
+  id             Int           @id @default(autoincrement())
+  code           String        @unique
+  customerId     Int?          @map("customer_id")
+  createdById    Int?          @map("created_by")
+  source         BookingSource @default(ONLINE)
+  roomId         Int           @map("room_id")
+  contactName    String        @map("contact_name")
+  contactPhone   String        @map("contact_phone")
+  guestCount     Int           @map("guest_count")
+  startAt        DateTime      @map("start_at") @db.Timestamptz(6)
+  endAt          DateTime      @map("end_at") @db.Timestamptz(6)
+  /// = end_at + 30 phút dọn phòng; khoảng chiếm dụng là [start_at, occupied_until)
+  occupiedUntil  DateTime      @map("occupied_until") @db.Timestamptz(6)
+  status         BookingStatus @default(CONFIRMED)
+  paymentStatus  PaymentStatus @default(UNPAID) @map("payment_status")
+  /// Đơn giá giờ chốt lúc xác nhận (BR08)
+  roomRateSnapshot Int         @map("room_rate_snapshot")
+  roomTotal      Int           @map("room_total")
+  endedEarlyReason String?     @map("ended_early_reason")
+  endedAt        DateTime?     @map("ended_at") @db.Timestamptz(6)
+  checkedInAt    DateTime?     @map("checked_in_at") @db.Timestamptz(6)
+
+  // ---- phim (trang 6) ----
+  movieId               Int?              @map("movie_id")
+  movieTitleSnapshot    String?           @map("movie_title_snapshot")
+  movieDurationSnapshot Int?              @map("movie_duration_snapshot")
+  preparationStatus     PreparationStatus @default(NOT_SELECTED) @map("preparation_status")
+  /// Khóa lạc quan cho việc đánh dấu READY (MOV06)
+  movieVersion          Int               @default(0) @map("movie_version")
+
+  note      String?
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  customer   User?  @relation("BookingCustomer", fields: [customerId], references: [id])
+  createdBy  User?  @relation("BookingCreator", fields: [createdById], references: [id])
+  room       Room   @relation(fields: [roomId], references: [id])
+  movie      Movie? @relation(fields: [movieId], references: [id])
+
+  foodOrders  FoodOrder[]
+  adjustments Adjustment[]
+  payment     Payment?
+  history     BookingStatusHistory[]
+
+  @@index([roomId, startAt])
+  @@index([customerId, startAt(sort: Desc)])
+  @@index([status, startAt])
+  @@map("booking")
+}
+
+model MenuItem {
+  id        Int            @id @default(autoincrement())
+  name      String
+  category  MenuCategory
+  imageUrl  String?        @map("image_url")
+  priceVnd  Int            @map("price_vnd")
+  isActive  Boolean        @default(true) @map("is_active")
+  items     FoodOrderItem[]
+
+  @@map("menu_item")
+}
+
+model FoodOrder {
+  id          Int             @id @default(autoincrement())
+  bookingId   Int             @map("booking_id")
+  status      FoodOrderStatus @default(PENDING)
+  createdById Int?            @map("created_by")
+  createdAt   DateTime        @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  booking   Booking         @relation(fields: [bookingId], references: [id])
+  createdBy User?           @relation(fields: [createdById], references: [id])
+  items     FoodOrderItem[]
+
+  @@index([bookingId])
+  @@index([status])
+  @@map("food_order")
+}
+
+model FoodOrderItem {
+  id               Int      @id @default(autoincrement())
+  orderId          Int      @map("order_id")
+  menuItemId       Int      @map("menu_item_id")
+  itemNameSnapshot String   @map("item_name_snapshot")
+  unitPriceVnd     Int      @map("unit_price_vnd")
+  quantity         Int
+
+  order    FoodOrder @relation(fields: [orderId], references: [id])
+  menuItem MenuItem  @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId])
+  @@map("food_order_item")
+}
+
+/// Điều chỉnh giảm/miễn tiền (trang 8). Chỉ APPROVED mới được trừ vào Số phải trả.
+model Adjustment {
+  id           Int              @id @default(autoincrement())
+  bookingId    Int              @map("booking_id")
+  amountVnd    Int              @map("amount_vnd")
+  reason       String
+  kind         AdjustmentKind
+  status       AdjustmentStatus @default(PENDING_APPROVAL)
+  createdById  Int              @map("created_by")
+  approvedById Int?             @map("approved_by")
+  decidedAt    DateTime?        @map("decided_at") @db.Timestamptz(6)
+  /// Mỗi booking tối đa một dòng is_current = true (unique partial index, migration 0002)
+  isCurrent    Boolean          @default(true) @map("is_current")
+  createdAt    DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  booking    Booking @relation(fields: [bookingId], references: [id])
+  createdBy  User    @relation("AdjustmentCreator", fields: [createdById], references: [id])
+  approvedBy User?   @relation("AdjustmentApprover", fields: [approvedById], references: [id])
+
+  @@index([status])
+  @@index([bookingId])
+  @@map("adjustment")
+}
+
+model Payment {
+  id               Int           @id @default(autoincrement())
+  bookingId        Int           @unique @map("booking_id")
+  originalTotalVnd Int           @map("original_total_vnd")
+  adjustmentVnd    Int           @default(0) @map("adjustment_vnd")
+  amountVnd        Int           @map("amount_vnd")
+  method           PaymentMethod
+  paidAt           DateTime      @default(now()) @map("paid_at") @db.Timestamptz(6)
+  recordedById     Int           @map("recorded_by")
+  idempotencyKey   String        @unique @map("idempotency_key")
+
+  booking    Booking @relation(fields: [bookingId], references: [id])
+  recordedBy User    @relation(fields: [recordedById], references: [id])
+
+  @@index([paidAt])
+  @@map("payment")
+}
+
+model BookingStatusHistory {
+  id        Int      @id @default(autoincrement())
+  bookingId Int      @map("booking_id")
+  /// status | payment_status | preparation_status
+  field     String
+  oldValue  String?  @map("old_value")
+  newValue  String   @map("new_value")
+  actorId   Int?     @map("actor_id")
+  changedAt DateTime @default(now()) @map("changed_at") @db.Timestamptz(6)
+  reason    String?
+
+  booking Booking @relation(fields: [bookingId], references: [id])
+  actor   User?   @relation(fields: [actorId], references: [id])
+
+  @@index([bookingId, changedAt])
+  @@map("booking_status_history")
+}
+
+/// Chống gửi lặp (trang 12): ghi NGOÀI giao dịch nghiệp vụ.
+model IdempotencyRequest {
+  id           Int               @id @default(autoincrement())
+  actorId      Int               @map("actor_id")
+  key          String
+  requestHash  String            @map("request_hash")
+  status       IdempotencyStatus @default(IN_PROGRESS)
+  responseCode Int?              @map("response_code")
+  responseBody Json?             @map("response_body")
+  createdAt    DateTime          @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  actor User @relation(fields: [actorId], references: [id])
+
+  @@unique([actorId, key])
+  @@map("idempotency_request")
+}

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản lý nhân viên – CineNest</title>
+</head>
+<body>
+  <!-- Chủ sở hữu: Dương (người 1) · Đặc tả: trang 3 – tạo/khóa nhân viên; khóa thu hồi phiên ngay (T17) -->
+  <header id="app-header"></header>
+  <main>
+    <h1>Quản lý nhân viên</h1>
+
+    <form id="staff-form" class="card"><h2>Tạo tài khoản nội bộ</h2>
+      <div class="row">
+        <div class="field"><label for="name">Họ tên</label><input id="name" name="name" required minlength="2"></div>
+        <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" required></div>
+        <div class="field"><label for="phone">Điện thoại</label><input id="phone" name="phone" required pattern="0[0-9]{9,10}"></div>
+        <div class="field"><label for="password">Mật khẩu</label><input id="password" name="password" type="password" required minlength="8"></div>
+        <div class="field"><label for="role">Vai trò</label><select id="role" name="role"><option value="STAFF">Nhân viên</option><option value="MANAGER">Quản lý</option></select></div>
+        <div class="field"><button type="submit">Tạo</button></div>
+      </div>
+    </form>
+    <div id="list" class="table-wrap"></div>
+  </main>
+  <script type="module" src="./employees.ts"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Quản lý phim – CineNest</title>
+</head>
+<body>
+  <!-- Chủ sở hữu: Thành Lê (người 4) · Đặc tả: trang 6 (MOV01, MOV07) – CRUD phim -->
+  <header id="app-header"></header>
+  <main>
+    <h1>Quản lý phim</h1>
+
+    <form id="movie-form" class="card"><h2>Thêm / sửa phim</h2><input type="hidden" name="id">
+      <div class="row">
+        <div class="field"><label for="title">Tên phim</label><input id="title" name="title" required></div>
+        <div class="field"><label for="genre">Thể loại</label><input id="genre" name="genre" required></div>
+        <div class="field"><label for="durationMinutes">Thời lượng (phút)</label><input id="durationMinutes" name="durationMinutes" type="number" min="1" required></div>
+        <div class="field"><label for="ageLabel">Nhãn tuổi</label><input id="ageLabel" name="ageLabel" value="P" required></div>
+        <div class="field"><label for="isActive">Đang phục vụ</label><select id="isActive" name="isActive"><option value="true">Có</option><option value="false">Không</option></select></div>
+      </div>
+      <div class="field"><label for="description">Mô tả</label><input id="description" name="description"></div>
+      <div class="field"><label for="posterUrl">URL poster</label><input id="posterUrl" name="posterUrl"></div>
+      <div class="row"><button type="submit">Lưu</button><button type="button" class="secondary" id="btn-reset">Tạo mới</button></div>
+    </form>
+    <div class="row" style="margin-bottom:8px"><div class="field" style="flex:1"><label for="search">Tìm phim theo tên</label><input id="search" type="search" placeholder="Nhập tên phim…" autocomplete="off"></div>
+      <p class="muted">Kho phim thật nhập bằng <code>npm run db:import-movies</code> (The Movies Dataset – Kaggle). Nhãn NR nghĩa là chưa phân loại; quản lý sửa tay nếu có thông tin chính xác.</p></div>
+    <div id="list" class="table-wrap"></div>
+  </main>
+  <script type="module" src="./movies.ts"></script>
+</body>
+</html>
