@@ -2,6 +2,7 @@
 
 Đồ án cuối kỳ Phát triển web · nhóm 6 người · theo **đặc tả v1.7** (`docs/DacTa_MovieCafeBookingSystem_v1.7.pdf`).
 Bản cập nhật tên, phân công và ranh giới làm song song: `output/pdf/CineNest_v1.8_ADDENDUM.pdf` (bản soạn thảo: `docs/CineNest_v1.8_ADDENDUM.md`).
+Phân công chi tiết cho từng thành viên và lịch hoàn thành đúng 7 ngày: `output/pdf/CineNest_PhanCongCongViec_7Ngay.pdf`.
 Bộ nền này đã chạy được từ đầu đến cuối (tìm phòng → đặt → phim/món → check-in → thu tiền → báo cáo) với dữ liệu mẫu,
 có 25 kiểm thử tự động (T01–T18 lõi + danh mục phim) đang xanh. Mỗi người mở module của mình trên khung này, không dựng lại từ đầu.
 
