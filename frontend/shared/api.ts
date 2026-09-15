@@ -43,6 +43,7 @@ const ERROR_MESSAGE: Record<string, string> = {
   INVALID_TRANSITION: "This booking status cannot be changed in that way.",
   CANCEL_TOO_LATE: "Self-cancellation is available until 2 hours before the start time.",
   REASON_REQUIRED: "A reason is required.",
+  TOO_EARLY_FOR_CHECK_IN: "Check-in is available from the booking start time.",
   PAST_END: "This session has ended. Record use without check-in or mark it as a no-show.",
   TOO_EARLY_FOR_NO_SHOW: "A booking can be marked as a no-show 15 minutes after its start time.",
   NOT_ENDED: "This session has not ended yet. Check the customer in normally.",

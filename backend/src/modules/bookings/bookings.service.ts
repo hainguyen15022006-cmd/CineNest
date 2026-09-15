@@ -26,6 +26,11 @@ import { buildPreorder, type PreorderLine } from "../menu/menu.service.js";
 export const MAX_FUTURE_CONFIRMED = 3; // trang 5
 export const CANCEL_BEFORE_MINUTES = 120; // chính sách hủy: >= 2 giờ trước giờ bắt đầu
 export const LATE_WARNING_MINUTES = 15; // nhãn cảnh báo/NO_SHOW sau 15 phút
+const BOOKING_CODE_RETRIES = 5;
+
+function isUniqueConstraintError(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
+}
 
 export type Actor = { id: number; role: "CUSTOMER" | "STAFF" | "MANAGER" };
 
@@ -114,6 +119,19 @@ export type CreateBookingContext = {
 export async function createBooking(input: CreateBookingInput, ctx: CreateBookingContext) {
   const win: Window = validateSlot(input.date, input.startTime, input.duration, { source: ctx.source });
 
+  let lastCodeCollision: unknown;
+  for (let attempt = 1; attempt <= BOOKING_CODE_RETRIES; attempt++) {
+    try {
+      return await createBookingOnce(input, ctx, win);
+    } catch (error) {
+      if (!isUniqueConstraintError(error)) throw error;
+      lastCodeCollision = error;
+    }
+  }
+  throw lastCodeCollision;
+}
+
+function createBookingOnce(input: CreateBookingInput, ctx: CreateBookingContext, win: Window) {
   return prisma.$transaction(
     async (tx) => {
       // 2. Khóa dòng phòng: các yêu cầu cùng phòng xếp hàng tại đây; khác phòng không bị chặn
@@ -285,6 +303,16 @@ export async function cancelBooking(actor: Actor, bookingId: number, reason: str
 // ------------------------------------------------------------------
 // Nhân viên: lịch ngày, quá hạn, check-in, NO_SHOW, sử dụng không check-in, khách tại quầy
 // ------------------------------------------------------------------
+export function searchStaffBookings(query: string) {
+  const q = query.trim();
+  return prisma.booking.findMany({
+    where: { OR: [{ code: { contains: q, mode: "insensitive" } }, { contactPhone: { contains: q } }] },
+    select: { ...listSelect, contactName: true, contactPhone: true, occupiedUntil: true, source: true },
+    orderBy: { startAt: "desc" },
+    take: 20,
+  });
+}
+
 export function listSchedule(dayStart: Date, dayEnd: Date) {
   return prisma.booking.findMany({
     where: { startAt: { gte: dayStart, lt: dayEnd } },
@@ -304,9 +332,11 @@ export function listOverdue(now = new Date()) {
 
 export async function checkIn(actor: Actor, bookingId: number) {
   return prisma.$transaction(async (tx) => {
-    const b = await tx.booking.findUnique({ where: { id: bookingId }, select: { endAt: true, status: true } });
+    const b = await tx.booking.findUnique({ where: { id: bookingId }, select: { startAt: true, endAt: true, status: true } });
     if (!b) throw ApiError.notFound("BOOKING_NOT_FOUND", "Không tìm thấy booking");
-    if (b.endAt <= new Date()) throw ApiError.conflict("PAST_END", "Đã qua giờ kết thúc; dùng 'sử dụng không check-in' hoặc NO_SHOW (EX06)");
+    const now = new Date();
+    if (b.startAt > now) throw ApiError.conflict("TOO_EARLY_FOR_CHECK_IN", "Chỉ check-in từ giờ bắt đầu của booking");
+    if (b.endAt <= now) throw ApiError.conflict("PAST_END", "Đã qua giờ kết thúc; dùng 'sử dụng không check-in' hoặc NO_SHOW (EX06)");
     return transitionBooking(tx, bookingId, "IN_USE", actor, "check-in");
   });
 }

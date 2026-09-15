@@ -17,15 +17,19 @@
         <div class="field"><label for="date">Date</label><input id="date" name="date" type="date" required></div>
         <div class="field"><label for="duration">Duration</label><select id="duration" name="duration"><option value="120">2 hours</option><option value="180">3 hours</option></select></div>
         <div class="field"><label for="startTime">Start time</label><select id="startTime" name="startTime"></select></div>
-        <div class="field"><label for="guests">Guests</label><input id="guests" name="guests" type="number" min="1" max="4" value="2" required></div>
+        <div class="field"><label for="guests">Guests</label><input id="guests" name="guests" type="number" min="1" max="6" value="2" required><span id="capacity-hint" class="hint"></span></div>
       </div>
       <div class="row">
         <div class="field"><label for="contactName">Customer name</label><input id="contactName" name="contactName" required minlength="2"></div>
         <div class="field"><label for="contactPhone">Phone number</label><input id="contactPhone" name="contactPhone" required pattern="0[0-9]{9,10}"></div>
+        <div class="field"><label for="note">Notes</label><input id="note" name="note" maxlength="500"></div>
         <div class="field"><span>Movie (optional – defaults to choosing at the café)</span><br><button type="button" class="secondary small" id="btn-pick-movie">Choose a movie now</button></div>
       </div>
       <div id="movie-picker" class="hidden"></div>
-      <button type="submit">Create booking</button>
+      <section><h2>Pre-order food (optional)</h2><div id="menu-picker"></div></section>
+      <div id="estimate" class="card" aria-live="polite"></div>
+      <p class="muted">Walk-in bookings use the same capacity, opening-hours, pricing and overlap checks as online bookings.</p>
+      <button type="submit" id="btn-create">Create booking</button>
     </form>
     <div id="result"></div>
   </main>

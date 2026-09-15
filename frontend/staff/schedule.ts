@@ -15,11 +15,16 @@ function dayStartUtc(date: string): number {
   return new Date(`${date}T09:00:00+07:00`).getTime();
 }
 
+function bookingRows(rows: Booking[]): string {
+  return `<table><thead><tr><th>Code</th><th>Room</th><th>Customer</th><th>Time</th><th>Status</th><th>Action</th></tr></thead><tbody>${rows
+    .map((b) => `<tr><td>${escapeHtml(b.code)}</td><td>${escapeHtml(b.room.name)}</td><td>${escapeHtml(b.contactName)} ${escapeHtml(b.contactPhone)}</td><td>${dateTimeVn(b.startAt)} – ${timeVn(b.endAt)}</td><td>${badge(b.status)}</td><td><a href="./booking-detail.html?id=${b.id}">Manage</a></td></tr>`).join("")}</tbody></table>`;
+}
+
 async function load() {
   const grid = $("#grid");
   setState(grid, "loading");
   try {
-    const [rooms, bookings] = await Promise.all([api.get<Room[]>("/api/admin/rooms").catch(() => api.get<Room[]>("/api/rooms")), api.get<Booking[]>(`/api/staff/bookings?date=${dateInput.value}`)]);
+    const [rooms, bookings] = await Promise.all([api.get<Room[]>("/api/rooms"), api.get<Booking[]>(`/api/staff/bookings?date=${encodeURIComponent(dateInput.value)}`)]);
     const base = dayStartUtc(dateInput.value);
     const head = Array.from({ length: 28 }, (_, i) => `<div class="cell head">${new Date(base + i * SLOT_MS).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}</div>`).join("");
     const rows = rooms.map((r) => {
@@ -43,11 +48,26 @@ async function load() {
   try {
     const rows = await api.get<Booking[]>("/api/staff/bookings/overdue");
     if (!rows.length) return setState(od, "empty", "No overdue bookings");
-    od.innerHTML = `<table><thead><tr><th>Code</th><th>Room</th><th>Customer</th><th>Time</th><th>Status</th><th></th></tr></thead><tbody>${rows
-      .map((b) => `<tr><td>${escapeHtml(b.code)}</td><td>${escapeHtml(b.room.name)}</td><td>${escapeHtml(b.contactName)} ${escapeHtml(b.contactPhone)}</td><td>${dateTimeVn(b.startAt)} – ${timeVn(b.endAt)}</td><td>${badge(b.status)}</td><td><a href="./booking-detail.html?id=${b.id}">Manage</a></td></tr>`).join("")}</tbody></table>`;
+    od.innerHTML = bookingRows(rows);
   } catch (e) {
     setState(od, "error", (e as Error).message);
   }
 }
 $<HTMLFormElement>("#date-form").addEventListener("submit", (e) => { e.preventDefault(); void load(); });
+$<HTMLFormElement>("#search-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const input = $<HTMLInputElement>("#query"), results = $("#search-results"), button = $<HTMLButtonElement>("#btn-search");
+  setState(results, "loading");
+  button.disabled = true;
+  try {
+    const rows = await api.get<Booking[]>(`/api/staff/bookings/search?q=${encodeURIComponent(input.value.trim())}`);
+    if (!rows.length) return setState(results, "empty", "No matching bookings");
+    results.innerHTML = bookingRows(rows);
+  } catch (error) {
+    setState(results, "error", (error as Error).message);
+  } finally {
+    button.disabled = false;
+  }
+});
 await load();
+if (location.hash === "#overdue") document.querySelector("#overdue-section")?.scrollIntoView();

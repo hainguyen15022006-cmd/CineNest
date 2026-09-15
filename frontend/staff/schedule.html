@@ -4,6 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Daily room schedule – CineNest</title>
+  <style>
+    #grid .schedule { grid-template-columns: 160px repeat(28, 56px); width: max-content; min-width: 100%; }
+    #grid .schedule .head { white-space: nowrap; }
+    #grid .schedule .room, #grid .schedule > .head:first-child { position: sticky; left: 0; z-index: 2; }
+    #search-results table, #overdue table { min-width: 760px; }
+    .schedule-note { margin-top: -4px; }
+  </style>
 </head>
 <body>
   <!-- Chủ sở hữu: Hải Anh (người 3) · Đặc tả: trang 10 – lịch dạng bảng theo phòng; bộ lọc "đã qua giờ nhưng chưa xử lý" (EX06) -->
@@ -13,9 +20,20 @@
 
     <form id="date-form" class="row"><div class="field"><label for="date">Date</label><input id="date" name="date" type="date"></div><div class="field"><button type="submit">View</button></div></form>
     <p class="muted">Colors are paired with labels: blue = confirmed, yellow = in use, green = completed, gray = cleaning. Select a cell to view details.</p>
+    <p class="muted schedule-note">The final 22:30 column covers 22:30–23:00, when the café closes.</p>
     <div id="grid" class="table-wrap"></div>
-    <h2>Overdue bookings requiring action</h2>
-    <div id="overdue" class="table-wrap"></div>
+    <section aria-labelledby="search-heading">
+      <h2 id="search-heading">Find a booking</h2>
+      <form id="search-form" class="row">
+        <div class="field"><label for="query">Booking code or phone number</label><input id="query" name="q" minlength="2" maxlength="50" required autocomplete="off"></div>
+        <div class="field"><button type="submit" id="btn-search">Search</button></div>
+      </form>
+      <div id="search-results" class="table-wrap"><p class="muted">Enter at least two characters.</p></div>
+    </section>
+    <section id="overdue-section" aria-labelledby="overdue-heading">
+      <h2 id="overdue-heading">Overdue bookings requiring action</h2>
+      <div id="overdue" class="table-wrap"></div>
+    </section>
   </main>
   <script type="module" src="./schedule.ts"></script>
 </body>

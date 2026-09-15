@@ -1,4 +1,4 @@
-import { describe, it, expect, afterAll } from "vitest";
+import { describe, it, expect, afterAll, vi } from "vitest";
 import { createApp } from "../src/app.js";
 import { closeDb, prisma, pool } from "../src/core/prisma.js";
 import { registerAndLogin, loginAs, createTestRoom, bookingPayload, key, futureDate } from "./helpers.js";
@@ -263,5 +263,268 @@ describe("Module 3 – booking: quy tắc, chống trùng hai lớp, chống g�
         where: { customerId, status: "CONFIRMED", startAt: { gt: new Date() } },
       }),
     ).toBe(3);
+  });
+
+  it("Day 4: staff schedule uses the requested Vietnam date and search finds code or phone", async () => {
+    const room = await createTestRoom();
+    const customer = await registerAndLogin(app);
+    const staff = await loginAs(app, "STAFF");
+    const date = futureDate(4);
+    const created = await customer.agent
+      .post("/api/bookings")
+      .set("Idempotency-Key", key())
+      .send(bookingPayload(room.id, { date, contactPhone: "0987654321" }));
+    expect(created.status).toBe(201);
+
+    const schedule = await staff.agent.get(`/api/staff/bookings?date=${date}`);
+    expect(schedule.status).toBe(200);
+    expect(
+      schedule.body.data.some(
+        (booking: { id: number }) => booking.id === created.body.data.id,
+      ),
+    ).toBe(true);
+
+    const byCode = await staff.agent.get(
+      `/api/staff/bookings/search?q=${created.body.data.code.slice(-4).toLowerCase()}`,
+    );
+    expect(byCode.status).toBe(200);
+    expect(
+      byCode.body.data.some(
+        (booking: { id: number }) => booking.id === created.body.data.id,
+      ),
+    ).toBe(true);
+
+    const byPhone = await staff.agent.get(
+      "/api/staff/bookings/search?q=87654321",
+    );
+    expect(byPhone.status).toBe(200);
+    expect(
+      byPhone.body.data.some(
+        (booking: { id: number }) => booking.id === created.body.data.id,
+      ),
+    ).toBe(true);
+  });
+
+  it("Day 4: a counter booking supports six guests, food and staff ownership", async () => {
+    const room = await createTestRoom(6, 120_000);
+    const staff = await loginAs(app, "STAFF");
+    const item = await prisma.menuItem.findFirstOrThrow({
+      where: { isActive: true },
+    });
+    const payload = bookingPayload(room.id, {
+      date: futureDate(3),
+      guests: 6,
+      items: [{ menuItemId: item.id, quantity: 2 }],
+      expectedTotalVnd: 240_000 + item.priceVnd * 2,
+    });
+    const created = await staff.agent
+      .post("/api/staff/bookings")
+      .set("Idempotency-Key", key())
+      .send(payload);
+
+    expect(created.status).toBe(201);
+    expect(created.body.data.source).toBe("COUNTER");
+    expect(created.body.data.customerId).toBeNull();
+    expect(created.body.data.createdById).toBe(staff.id);
+    expect(created.body.data.foodOrders[0].items[0].quantity).toBe(2);
+
+    const anotherRoom = await createTestRoom(6);
+    const overCapacity = await staff.agent
+      .post("/api/staff/bookings")
+      .set("Idempotency-Key", key())
+      .send(bookingPayload(anotherRoom.id, { date: futureDate(3), guests: 7 }));
+    expect(overCapacity.status).toBe(422);
+    expect(overCapacity.body.error.code).toBe("OVER_CAPACITY");
+  });
+
+  it("Day 4: a booking-code collision retries the transaction with a new code", async () => {
+    const firstRoom = await createTestRoom();
+    const secondRoom = await createTestRoom();
+    const customer = await registerAndLogin(app);
+    const first = await customer.agent
+      .post("/api/bookings")
+      .set("Idempotency-Key", key())
+      .send(bookingPayload(firstRoom.id));
+    expect(first.status).toBe(201);
+
+    const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const firstCode = first.body.data.code as string;
+    const firstSuffix = firstCode.slice(-4);
+    const prefix = firstCode.slice(0, -4);
+    const existingCodes = new Set((await prisma.booking.findMany({ select: { code: true } })).map(({ code }) => code));
+    const alternateSuffix = ["AAAA", "AAAB", "AAAC", "AAAD", "AAAE"].find((suffix) => !existingCodes.has(prefix + suffix));
+    expect(alternateSuffix).toBeTruthy();
+    const randomValues = [...firstSuffix, ...alternateSuffix!].map((character) => (alphabet.indexOf(character) + 0.25) / alphabet.length);
+    const random = vi.spyOn(Math, "random").mockImplementation(() => randomValues.shift() ?? 0);
+
+    try {
+      const second = await customer.agent
+        .post("/api/bookings")
+        .set("Idempotency-Key", key())
+        .send(bookingPayload(secondRoom.id));
+      expect(second.status).toBe(201);
+      expect(second.body.data.code).toBe(prefix + alternateSuffix);
+      expect(second.body.data.code).not.toBe(firstCode);
+    } finally {
+      random.mockRestore();
+    }
+  });
+
+  it("Day 4: check-in waits for the start time and records history", async () => {
+    const room = await createTestRoom();
+    const customer = await registerAndLogin(app);
+    const staff = await loginAs(app, "STAFF");
+    const created = await customer.agent
+      .post("/api/bookings")
+      .set("Idempotency-Key", key())
+      .send(bookingPayload(room.id));
+    expect(created.status).toBe(201);
+
+    const early = await staff.agent
+      .post(`/api/staff/bookings/${created.body.data.id}/check-in`)
+      .send({});
+    expect(early.status).toBe(409);
+    expect(early.body.error.code).toBe("TOO_EARLY_FOR_CHECK_IN");
+
+    const now = new Date();
+    await prisma.booking.update({
+      where: { id: created.body.data.id },
+      data: {
+        startAt: addMinutes(now, -5),
+        endAt: addMinutes(now, 115),
+        occupiedUntil: addMinutes(now, 145),
+      },
+    });
+    const checkedIn = await staff.agent
+      .post(`/api/staff/bookings/${created.body.data.id}/check-in`)
+      .send({});
+    expect(checkedIn.status).toBe(200);
+    expect(checkedIn.body.data.status).toBe("IN_USE");
+    expect(checkedIn.body.data.checkedInAt).toBeTruthy();
+    expect(
+      await prisma.bookingStatusHistory.count({
+        where: {
+          bookingId: created.body.data.id,
+          oldValue: "CONFIRMED",
+          newValue: "IN_USE",
+          reason: "check-in",
+        },
+      }),
+    ).toBe(1);
+  });
+
+  it("Day 4: no-show is blocked before 15 minutes and cancels pending food when valid", async () => {
+    const room = await createTestRoom();
+    const customer = await registerAndLogin(app);
+    const staff = await loginAs(app, "STAFF");
+    const item = await prisma.menuItem.findFirstOrThrow({
+      where: { isActive: true },
+    });
+    const created = await customer.agent
+      .post("/api/bookings")
+      .set("Idempotency-Key", key())
+      .send(
+        bookingPayload(room.id, {
+          items: [{ menuItemId: item.id, quantity: 1 }],
+        }),
+      );
+
+    const early = await staff.agent
+      .post(`/api/staff/bookings/${created.body.data.id}/no-show`)
+      .send({});
+    expect(early.status).toBe(409);
+    expect(early.body.error.code).toBe("TOO_EARLY_FOR_NO_SHOW");
+
+    const now = new Date();
+    await prisma.booking.update({
+      where: { id: created.body.data.id },
+      data: {
+        startAt: addMinutes(now, -20),
+        endAt: addMinutes(now, 100),
+        occupiedUntil: addMinutes(now, 130),
+      },
+    });
+    const noShow = await staff.agent
+      .post(`/api/staff/bookings/${created.body.data.id}/no-show`)
+      .send({ reason: "Customer did not arrive" });
+    expect(noShow.status).toBe(200);
+    expect(noShow.body.data.status).toBe("NO_SHOW");
+    expect(
+      await prisma.foodOrder.count({
+        where: { bookingId: created.body.data.id, status: "CANCELLED" },
+      }),
+    ).toBe(1);
+  });
+
+  it("Day 4: overdue includes unresolved bookings and mark-used requires a finished session", async () => {
+    const customer = await registerAndLogin(app);
+    const staff = await loginAs(app, "STAFF");
+    const confirmedRoom = await createTestRoom();
+    const inUseRoom = await createTestRoom();
+    const markUsedRoom = await createTestRoom();
+    const create = async (roomId: number) =>
+      customer.agent
+        .post("/api/bookings")
+        .set("Idempotency-Key", key())
+        .send(bookingPayload(roomId));
+    const confirmed = await create(confirmedRoom.id);
+    const inUse = await create(inUseRoom.id);
+    const markUsed = await create(markUsedRoom.id);
+    const now = new Date();
+
+    await prisma.booking.update({
+      where: { id: confirmed.body.data.id },
+      data: {
+        startAt: addMinutes(now, -10),
+        endAt: addMinutes(now, 110),
+        occupiedUntil: addMinutes(now, 140),
+      },
+    });
+    await prisma.booking.update({
+      where: { id: inUse.body.data.id },
+      data: {
+        status: "IN_USE",
+        startAt: addMinutes(now, -180),
+        endAt: addMinutes(now, -60),
+        occupiedUntil: addMinutes(now, -30),
+      },
+    });
+
+    const overdue = await staff.agent.get("/api/staff/bookings/overdue");
+    const overdueIds = overdue.body.data.map(
+      (booking: { id: number }) => booking.id,
+    );
+    expect(overdueIds).toContain(confirmed.body.data.id);
+    expect(overdueIds).toContain(inUse.body.data.id);
+
+    const tooEarly = await staff.agent
+      .post(`/api/staff/bookings/${markUsed.body.data.id}/mark-used`)
+      .send({ note: "Forgot check-in" });
+    expect(tooEarly.status).toBe(409);
+    expect(tooEarly.body.error.code).toBe("NOT_ENDED");
+
+    await prisma.booking.update({
+      where: { id: markUsed.body.data.id },
+      data: {
+        startAt: addMinutes(now, -180),
+        endAt: addMinutes(now, -60),
+        occupiedUntil: addMinutes(now, -30),
+      },
+    });
+    const completed = await staff.agent
+      .post(`/api/staff/bookings/${markUsed.body.data.id}/mark-used`)
+      .send({ note: "Customer used the room; staff forgot to check in" });
+    expect(completed.status).toBe(200);
+    expect(completed.body.data.status).toBe("COMPLETED");
+    expect(completed.body.data.endedEarlyReason).toBeNull();
+    expect(
+      await prisma.bookingStatusHistory.count({
+        where: {
+          bookingId: markUsed.body.data.id,
+          oldValue: "CONFIRMED",
+          newValue: "COMPLETED",
+        },
+      }),
+    ).toBe(1);
   });
 });

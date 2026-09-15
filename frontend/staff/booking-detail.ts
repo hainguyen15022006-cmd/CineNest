@@ -11,12 +11,15 @@ await requireRole("STAFF");
 const id = param("id");
 const box = $("#content");
 
+if (!id) setState(box, "error", "A booking ID is required");
+
 async function act(url: string, body: unknown, btn: HTMLButtonElement, confirmMsg?: string) {
   if (confirmMsg && !confirm(confirmMsg)) return;
   await run(async () => { await api.post(url, body); toast("Updated successfully", "success"); await load(); }, btn);
 }
 
 async function load() {
+  if (!id) return;
   setState(box, "loading");
   try {
     const b = await api.get<Booking>(`/api/bookings/${id}`);
@@ -37,10 +40,14 @@ async function load() {
       const btn = document.createElement("button"); btn.type = "button"; btn.className = cls; btn.textContent = text;
       btn.addEventListener("click", () => handler(btn)); actions.appendChild(btn);
     };
-    if (b.status === "CONFIRMED" && now < end) add("Check-in", "", (btn) => act(`/api/staff/bookings/${b.id}/check-in`, {}, btn));
-    if (b.status === "CONFIRMED" && late) add("Mark as no-show", "danger", (btn) => act(`/api/staff/bookings/${b.id}/no-show`, {}, btn, "Confirm that the customer did not arrive?"));
+    if (b.status === "CONFIRMED" && now >= start && now < end) add("Check-in", "", (btn) => act(`/api/staff/bookings/${b.id}/check-in`, {}, btn));
+    if (b.status === "CONFIRMED" && now < start) actions.innerHTML = `<p class="muted">Check-in is available from ${dateTimeVn(b.startAt)}.</p>`;
+    if (b.status === "CONFIRMED" && late) add("Mark as no-show", "danger", (btn) => {
+      const reason = prompt("Reason for no-show?", "Customer did not arrive after 15 minutes");
+      if (reason !== null) void act(`/api/staff/bookings/${b.id}/no-show`, { reason }, btn, "Confirm that the customer did not arrive?");
+    });
     if (b.status === "CONFIRMED" && now >= end) add("Record use without check-in (EX06)", "secondary", (btn) => { const note = prompt("Why was the customer not checked in?"); if (note) void act(`/api/staff/bookings/${b.id}/mark-used`, { note }, btn); });
-    if (b.status === "CONFIRMED") add("Cancel (reason required)", "secondary", (btn) => { const reason = prompt("Cancellation reason?"); if (reason) void act(`/api/bookings/${b.id}/cancel`, { reason }, btn); });
+    if (b.status === "CONFIRMED") add("Cancel (reason required)", "secondary", (btn) => { const reason = prompt("Cancellation reason?"); if (reason) void act(`/api/bookings/${b.id}/cancel`, { reason }, btn, "Cancel this booking?"); });
     if (b.status === "IN_USE" || (b.status === "COMPLETED" && b.paymentStatus === "UNPAID")) {
       const a = document.createElement("a"); a.className = "btn"; a.href = `./checkout.html?bookingId=${b.id}`; a.textContent = "Invoice / payment / end early"; actions.appendChild(a);
     }

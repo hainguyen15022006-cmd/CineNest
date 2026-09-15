@@ -21,6 +21,7 @@ Thời gian: gửi lên `date` (YYYY-MM-DD) + `startTime` (HH:mm) theo giờ Vi�
 | `POST /bookings/:id/cancel` `{reason?}` | chủ sở hữu / nhân viên | Hải Anh | khách: còn ≥ 2 giờ; nhân viên: bắt buộc lý do |
 | `PATCH /bookings/:id/movie` `{movieId|null}` | chủ sở hữu / nhân viên | Thành Lê | MOV05; tại quán so với thời gian còn lại |
 | `GET /staff/bookings?date` | STAFF | Hải Anh | lịch ngày theo phòng |
+| `GET /staff/bookings/search?q` | STAFF | Hải Anh | tìm tối đa 20 booking theo mã hoặc số điện thoại |
 | `GET /staff/bookings/overdue` | STAFF | Hải Anh | EX06 |
 | `POST /staff/bookings` (cùng body với `/bookings`) | STAFF | Hải Anh | khách tại quầy, không cần báo trước 30 phút |
 | `POST /staff/bookings/:id/check-in` · `/no-show` `{reason?}` · `/mark-used` `{note}` | STAFF | Hải Anh | |

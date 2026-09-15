@@ -11,6 +11,7 @@ import * as bookings from "./bookings.service.js";
 export const bookingsStaffRouter = Router();
 const idParam = z.coerce.number().int().positive();
 const dateQuery = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional() });
+const searchQuery = z.object({ q: z.string().trim().min(2).max(50) });
 
 function dayRange(date?: string) {
   const start = vnToDate(date ?? todayVn(), "00:00");
@@ -21,6 +22,10 @@ bookingsStaffRouter.get("/bookings", async (req, res) => {
   const { date } = parse(dateQuery, req.query);
   const { start, end } = dayRange(date);
   ok(res, await bookings.listSchedule(start, end));
+});
+bookingsStaffRouter.get("/bookings/search", async (req, res) => {
+  const { q } = parse(searchQuery, req.query);
+  ok(res, await bookings.searchStaffBookings(q));
 });
 bookingsStaffRouter.get("/bookings/overdue", async (_req, res) => ok(res, await bookings.listOverdue()));
 bookingsStaffRouter.post("/bookings", async (req, res) => {
@@ -36,6 +41,6 @@ bookingsStaffRouter.post("/bookings/:id/no-show", async (req, res) => {
   ok(res, await bookings.markNoShow(req.user!, parse(idParam, req.params.id), reason ?? null));
 });
 bookingsStaffRouter.post("/bookings/:id/mark-used", async (req, res) => {
-  const { note } = parse(z.object({ note: z.string().min(1).max(300) }), req.body);
+  const { note } = parse(z.object({ note: z.string().trim().min(1).max(300) }), req.body);
   ok(res, await bookings.markUsedWithoutCheckIn(req.user!, parse(idParam, req.params.id), note));
 });
