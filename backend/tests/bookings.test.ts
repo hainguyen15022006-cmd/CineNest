@@ -2,7 +2,7 @@ import { describe, it, expect, afterAll } from "vitest";
 import { createApp } from "../src/app.js";
 import { closeDb, prisma, pool } from "../src/core/prisma.js";
 import { registerAndLogin, loginAs, createTestRoom, bookingPayload, key, futureDate } from "./helpers.js";
-import { dateToVn } from "../src/core/time.js";
+import { addMinutes, dateToVn } from "../src/core/time.js";
 
 const app = createApp();
 
@@ -139,5 +139,63 @@ describe("Module 3 – booking: quy tắc, chống trùng hai lớp, chống g�
     const created = await a.agent.post("/api/bookings").set("Idempotency-Key", key()).send(bookingPayload(room.id));
     expect((await b.agent.get(`/api/bookings/${created.body.data.id}`)).status).toBe(404);
     expect((await a.agent.get(`/api/bookings/${created.body.data.code}`)).status).toBe(200);
+  });
+
+  it("Day 2: create -> upcoming -> detail -> cancel -> past", async () => {
+    const room = await createTestRoom();
+    const { agent } = await registerAndLogin(app);
+    const created = await agent
+      .post("/api/bookings")
+      .set("Idempotency-Key", key())
+      .send(bookingPayload(room.id));
+
+    expect(created.status).toBe(201);
+    const bookingId = created.body.data.id as number;
+    const bookingCode = created.body.data.code as string;
+
+    const upcomingBeforeCancel = await agent.get("/api/me/bookings?scope=upcoming");
+    expect(upcomingBeforeCancel.status).toBe(200);
+    expect(upcomingBeforeCancel.body.data.some((booking: { id: number }) => booking.id === bookingId)).toBe(true);
+
+    const detail = await agent.get(`/api/bookings/${bookingCode}`);
+    expect(detail.status).toBe(200);
+    expect(detail.body.data.id).toBe(bookingId);
+    expect(detail.body.data.code).toBe(bookingCode);
+
+    const cancelled = await agent.post(`/api/bookings/${bookingId}/cancel`).send({});
+    expect(cancelled.status).toBe(200);
+    expect(cancelled.body.data.status).toBe("CANCELLED");
+
+    const upcomingAfterCancel = await agent.get("/api/me/bookings?scope=upcoming");
+    expect(upcomingAfterCancel.body.data.some((booking: { id: number }) => booking.id === bookingId)).toBe(false);
+
+    const past = await agent.get("/api/me/bookings?scope=past");
+    expect(past.status).toBe(200);
+    expect(past.body.data.some((booking: { id: number }) => booking.id === bookingId)).toBe(true);
+  });
+
+  it("T06: customer cannot cancel less than two hours before the start time", async () => {
+    const room = await createTestRoom();
+    const { agent } = await registerAndLogin(app);
+    const created = await agent
+      .post("/api/bookings")
+      .set("Idempotency-Key", key())
+      .send(bookingPayload(room.id));
+    expect(created.status).toBe(201);
+
+    const startAt = addMinutes(new Date(), 90);
+    await prisma.booking.update({
+      where: { id: created.body.data.id },
+      data: {
+        startAt,
+        endAt: addMinutes(startAt, 120),
+        occupiedUntil: addMinutes(startAt, 150),
+      },
+    });
+
+    const cancelled = await agent.post(`/api/bookings/${created.body.data.id}/cancel`).send({});
+    expect(cancelled.status).toBe(422);
+    expect(cancelled.body.error.code).toBe("CANCEL_TOO_LATE");
+    expect((await prisma.booking.findUniqueOrThrow({ where: { id: created.body.data.id } })).status).toBe("CONFIRMED");
   });
 });

@@ -20,7 +20,7 @@ const sel = {
 if (!sel.roomId || !sel.date || !sel.startTime) location.replace("./index.html");
 
 const room = await api.get<Room>(`/api/rooms/${sel.roomId}`);
-const roomTotal = Math.round((room.hourlyPriceVnd * sel.duration) / 60);
+let roomTotal = Math.round((room.hourlyPriceVnd * sel.duration) / 60);
 let movie: Movie | null = null;
 let menuPicker: Awaited<ReturnType<typeof mountMenuPicker>> | null = null;
 let step = 1;
@@ -86,8 +86,15 @@ $<HTMLFormElement>("#confirm-form").addEventListener("submit", async (e) => {
       toast(`This time slot was just booked.${suggest ? ` Nearest available time: ${new Date(suggest).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}` : ""}`, "error");
       idemKey = newIdempotencyKey();
     } else if (err instanceof ApiError && err.code === "PRICE_CHANGED") {
-      toast("The price has changed. Please review the total and confirm again.", "error");
-      menuPicker = null; await renderMenuStep(); renderReview();
+      const details = err.details as
+        | { roomTotalVnd?: number; itemsTotalVnd?: number; totalVnd?: number }
+        | undefined;
+      const selectedItems = menuPicker?.items ?? [];
+      if (typeof details?.roomTotalVnd === "number") roomTotal = details.roomTotalVnd;
+      // Reload active menu items and their current prices, while preserving quantities.
+      menuPicker = await mountMenuPicker($("#menu"), selectedItems);
+      renderReview();
+      toast("The price has changed. The latest prices are now displayed. Please review and confirm again.", "error");
       idemKey = newIdempotencyKey();
     } else if (err instanceof Error && err.message !== "redirecting") {
       toast(err.message, "error"); // lỗi mạng: giữ idemKey để thử lại nhận đúng kết quả cũ
