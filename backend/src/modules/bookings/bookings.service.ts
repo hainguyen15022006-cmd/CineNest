@@ -9,7 +9,16 @@
  */
 import { prisma, type Tx } from "../../core/prisma.js";
 import { ApiError } from "../../core/http.js";
-import { generateBookingCode, roomTotal, validateSlot, HOLDING_STATUSES, type Window } from "../../core/time.js";
+import {
+  CLOSE_TIME,
+  dateToVn,
+  generateBookingCode,
+  roomTotal,
+  validateSlot,
+  vnToDate,
+  HOLDING_STATUSES,
+  type Window,
+} from "../../core/time.js";
 import type { BookingStatus, BookingSource } from "../../generated/prisma/enums.js";
 import { validateMovieForBooking } from "../movies/movies.service.js";
 import { buildPreorder, type PreorderLine } from "../menu/menu.service.js";
@@ -196,16 +205,19 @@ export async function createBooking(input: CreateBookingInput, ctx: CreateBookin
 async function nextFreeStart(tx: Tx, roomId: number, win: Window): Promise<string | null> {
   const durationMs = win.endAt.getTime() - win.startAt.getTime();
   const cleanupMs = win.occupiedUntil.getTime() - win.endAt.getTime();
+  const date = dateToVn(win.startAt).date;
+  const closeAt = vnToDate(date, CLOSE_TIME);
   const holds = await tx.booking.findMany({
     where: { roomId, status: { in: [...HOLDING_STATUSES] }, occupiedUntil: { gt: win.startAt } },
     select: { startAt: true, occupiedUntil: true },
     orderBy: { startAt: "asc" },
   });
   for (let i = 1; i <= 24; i++) {
-    const s = new Date(win.startAt.getTime() + i * 30 * 60_000);
-    const e = new Date(s.getTime() + durationMs + cleanupMs);
-    const free = holds.every((h) => !(s < h.occupiedUntil && h.startAt < e));
-    if (free) return s.toISOString();
+    const startAt = new Date(win.startAt.getTime() + i * 30 * 60_000);
+    const occupiedUntil = new Date(startAt.getTime() + durationMs + cleanupMs);
+    if (occupiedUntil > closeAt) break;
+    const free = holds.every((booking) => !(startAt < booking.occupiedUntil && booking.startAt < occupiedUntil));
+    if (free) return startAt.toISOString();
   }
   return null;
 }

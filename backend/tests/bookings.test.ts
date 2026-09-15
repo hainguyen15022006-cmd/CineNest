@@ -198,4 +198,70 @@ describe("Module 3 – booking: quy tắc, chống trùng hai lớp, chống g�
     expect(cancelled.body.error.code).toBe("CANCEL_TOO_LATE");
     expect((await prisma.booking.findUniqueOrThrow({ where: { id: created.body.data.id } })).status).toBe("CONFIRMED");
   });
+
+  it("Day 3: nearest suggestion never goes beyond closing time", async () => {
+    const room = await createTestRoom();
+    const firstUser = await registerAndLogin(app);
+    const secondUser = await registerAndLogin(app);
+    const payload = bookingPayload(room.id, { startTime: "19:30", duration: 180 });
+
+    const first = await firstUser.agent.post("/api/bookings").set("Idempotency-Key", key()).send(payload);
+    expect(first.status).toBe(201);
+
+    const conflict = await secondUser.agent.post("/api/bookings").set("Idempotency-Key", key()).send(payload);
+    expect(conflict.status).toBe(409);
+    expect(conflict.body.error.code).toBe("ROOM_TAKEN");
+    expect(conflict.body.error.details.suggest).toBeNull();
+  });
+
+  it("Day 3: creating a booking requires an Idempotency-Key", async () => {
+    const room = await createTestRoom();
+    const { agent } = await registerAndLogin(app);
+    const response = await agent.post("/api/bookings").send(bookingPayload(room.id));
+
+    expect(response.status).toBe(400);
+    expect(response.body.error.code).toBe("IDEMPOTENCY_KEY_REQUIRED");
+    expect(await prisma.booking.count({ where: { roomId: room.id } })).toBe(0);
+  });
+
+  it("Day 3: a failed idempotent request can be retried", async () => {
+    const room = await createTestRoom();
+    const firstUser = await registerAndLogin(app);
+    const secondUser = await registerAndLogin(app);
+    const payload = bookingPayload(room.id);
+
+    const existing = await firstUser.agent.post("/api/bookings").set("Idempotency-Key", key()).send(payload);
+    expect(existing.status).toBe(201);
+
+    const retryKey = key();
+    const blocked = await secondUser.agent.post("/api/bookings").set("Idempotency-Key", retryKey).send(payload);
+    expect(blocked.status).toBe(409);
+    expect(blocked.body.error.code).toBe("ROOM_TAKEN");
+
+    const cancelled = await firstUser.agent.post(`/api/bookings/${existing.body.data.id}/cancel`).send({});
+    expect(cancelled.status).toBe(200);
+
+    const retried = await secondUser.agent.post("/api/bookings").set("Idempotency-Key", retryKey).send(payload);
+    expect(retried.status).toBe(201);
+    expect(retried.headers["idempotent-replayed"]).toBe("false");
+  });
+
+  it("Day 3: concurrent requests cannot exceed three upcoming bookings", async () => {
+    const rooms = await Promise.all(Array.from({ length: 4 }, () => createTestRoom()));
+    const { agent, id: customerId } = await registerAndLogin(app);
+    const responses = await Promise.all(
+      rooms.map((room) => agent.post("/api/bookings").set("Idempotency-Key", key()).send(bookingPayload(room.id))),
+    );
+    const statuses = responses.map((response) => response.status);
+
+    expect(statuses.filter((status) => status === 201)).toHaveLength(3);
+    expect(
+      responses.filter((response) => response.status === 422 && response.body.error.code === "BOOKING_LIMIT"),
+    ).toHaveLength(1);
+    expect(
+      await prisma.booking.count({
+        where: { customerId, status: "CONFIRMED", startAt: { gt: new Date() } },
+      }),
+    ).toBe(3);
+  });
 });
