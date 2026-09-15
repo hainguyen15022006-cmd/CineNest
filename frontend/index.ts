@@ -4,7 +4,7 @@ import { api, qs } from "./shared/api";
 import { money, todayVn, startTimeOptions } from "./shared/format";
 import type { Room } from "./shared/types";
 
-await mountLayout("Tìm phòng");
+await mountLayout("Find a room");
 
 const form = $<HTMLFormElement>("#search-form");
 const date = $<HTMLInputElement>("#date");
@@ -36,11 +36,11 @@ try {
       <article class="card">
         ${r.images?.[0] ? `<img src="${escapeHtml(r.images[0].url)}" alt="" style="width:100%;border-radius:8px;aspect-ratio:16/10;object-fit:cover">` : ""}
         <h3 style="margin:8px 0 4px">${escapeHtml(r.name)}</h3>
-        <p class="muted">Tối đa ${r.capacity} khách · ${money(r.hourlyPriceVnd)}/giờ</p>
-        <a class="btn small secondary" href="./room.html?id=${r.id}">Xem chi tiết</a>
+        <p class="muted">Up to ${r.capacity} guests · ${money(r.hourlyPriceVnd)}/hour</p>
+        <a class="btn small secondary" href="./room.html?id=${r.id}">View details</a>
       </article>`).join("")
     : "";
-  if (!rooms.length) setState(roomsBox, "empty", "Chưa có phòng nào");
+  if (!rooms.length) setState(roomsBox, "empty", "No rooms are available");
 } catch (e) {
   setState(roomsBox, "error", (e as Error).message);
 }

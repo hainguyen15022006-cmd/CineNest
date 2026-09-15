@@ -29,12 +29,12 @@ export function mountCrud<T extends { id: number }>(opts: {
       if (!rows.length) return setState(list, "empty");
       const pages = Math.max(1, Math.ceil(total / limit));
       const pager = paged && pages > 1
-        ? `<div class="row" style="justify-content:space-between;margin-top:8px"><span class="muted">${total} bản ghi · trang ${page}/${pages}</span>
-             <span><button type="button" class="small secondary" data-page="${page - 1}" ${page <= 1 ? "disabled" : ""}>‹ Trước</button>
-             <button type="button" class="small secondary" data-page="${page + 1}" ${page >= pages ? "disabled" : ""}>Sau ›</button></span></div>`
-        : paged ? `<p class="muted">${total} bản ghi</p>` : "";
+        ? `<div class="row" style="justify-content:space-between;margin-top:8px"><span class="muted">${total} records · page ${page}/${pages}</span>
+             <span><button type="button" class="small secondary" data-page="${page - 1}" ${page <= 1 ? "disabled" : ""}>‹ Previous</button>
+             <button type="button" class="small secondary" data-page="${page + 1}" ${page >= pages ? "disabled" : ""}>Next ›</button></span></div>`
+        : paged ? `<p class="muted">${total} records</p>` : "";
       list.innerHTML = `<table><thead><tr>${opts.columns.map((c) => `<th>${c.title}</th>`).join("")}<th></th></tr></thead><tbody>${rows
-        .map((r) => `<tr>${opts.columns.map((c) => `<td>${c.render(r)}</td>`).join("")}<td><button type="button" class="small secondary" data-edit="${r.id}">Sửa</button></td></tr>`).join("")}</tbody></table>${pager}`;
+        .map((r) => `<tr>${opts.columns.map((c) => `<td>${c.render(r)}</td>`).join("")}<td><button type="button" class="small secondary" data-edit="${r.id}">Edit</button></td></tr>`).join("")}</tbody></table>${pager}`;
       list.querySelectorAll<HTMLButtonElement>("button[data-page]").forEach((b) => b.addEventListener("click", () => { page = Number(b.dataset.page); void load(); }));
       list.querySelectorAll<HTMLButtonElement>("button[data-edit]").forEach((b) =>
         b.addEventListener("click", () => { const row = rows.find((x) => x.id === Number(b.dataset.edit))!; opts.fillForm(form, row); (form.elements.namedItem("id") as HTMLInputElement).value = String(row.id); form.scrollIntoView(); }),
@@ -49,7 +49,7 @@ export function mountCrud<T extends { id: number }>(opts: {
     const id = Number((form.elements.namedItem("id") as HTMLInputElement).value);
     await run(async () => {
       if (id) await api.patch(opts.updateUrl(id), opts.toBody(f)); else await api.post(opts.createUrl, opts.toBody(f));
-      toast("Đã lưu", "success"); form.reset(); (form.elements.namedItem("id") as HTMLInputElement).value = ""; await load();
+      toast("Saved", "success"); form.reset(); (form.elements.namedItem("id") as HTMLInputElement).value = ""; await load();
     }, form.querySelector<HTMLButtonElement>("button[type=submit]"));
   });
   document.getElementById("btn-reset")?.addEventListener("click", () => { form.reset(); (form.elements.namedItem("id") as HTMLInputElement).value = ""; });

@@ -1,31 +1,31 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Khách tại quầy – CineNest</title>
+  <title>Walk-in booking – CineNest</title>
 </head>
 <body>
   <!-- Chủ sở hữu: Hải Anh (người 3) · Đặc tả: UC04 – tạo booking tại quầy; cùng cơ chế chống trùng (T14) -->
   <header id="app-header"></header>
   <main>
-    <h1>Khách tại quầy</h1>
+    <h1>Walk-in booking</h1>
 
     <form id="walkin-form" class="card">
       <div class="row">
-        <div class="field"><label for="roomId">Phòng</label><select id="roomId" name="roomId" required></select></div>
-        <div class="field"><label for="date">Ngày</label><input id="date" name="date" type="date" required></div>
-        <div class="field"><label for="duration">Gói</label><select id="duration" name="duration"><option value="120">2 giờ</option><option value="180">3 giờ</option></select></div>
-        <div class="field"><label for="startTime">Giờ bắt đầu</label><select id="startTime" name="startTime"></select></div>
-        <div class="field"><label for="guests">Số khách</label><input id="guests" name="guests" type="number" min="1" max="4" value="2" required></div>
+        <div class="field"><label for="roomId">Room</label><select id="roomId" name="roomId" required></select></div>
+        <div class="field"><label for="date">Date</label><input id="date" name="date" type="date" required></div>
+        <div class="field"><label for="duration">Duration</label><select id="duration" name="duration"><option value="120">2 hours</option><option value="180">3 hours</option></select></div>
+        <div class="field"><label for="startTime">Start time</label><select id="startTime" name="startTime"></select></div>
+        <div class="field"><label for="guests">Guests</label><input id="guests" name="guests" type="number" min="1" max="4" value="2" required></div>
       </div>
       <div class="row">
-        <div class="field"><label for="contactName">Tên khách</label><input id="contactName" name="contactName" required minlength="2"></div>
-        <div class="field"><label for="contactPhone">Số điện thoại</label><input id="contactPhone" name="contactPhone" required pattern="0[0-9]{9,10}"></div>
-        <div class="field"><span>Phim (tùy chọn – mặc định chọn tại quán)</span><br><button type="button" class="secondary small" id="btn-pick-movie">Chọn phim ngay</button></div>
+        <div class="field"><label for="contactName">Customer name</label><input id="contactName" name="contactName" required minlength="2"></div>
+        <div class="field"><label for="contactPhone">Phone number</label><input id="contactPhone" name="contactPhone" required pattern="0[0-9]{9,10}"></div>
+        <div class="field"><span>Movie (optional – defaults to choosing at the café)</span><br><button type="button" class="secondary small" id="btn-pick-movie">Choose a movie now</button></div>
       </div>
       <div id="movie-picker" class="hidden"></div>
-      <button type="submit">Tạo booking</button>
+      <button type="submit">Create booking</button>
     </form>
     <div id="result"></div>
   </main>

@@ -5,35 +5,35 @@ function tomorrowVn(): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }
 
-test("khách đăng ký và hoàn thành luồng đặt phòng bốn bước", async ({ page }) => {
+test("customer registers and completes the four-step booking flow", async ({ page }) => {
   const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   await page.goto("/register.html");
-  await page.getByLabel("Họ tên").fill("Khách E2E");
+  await page.getByLabel("Full name").fill("E2E Customer");
   await page.getByLabel("Email").fill(`e2e-${suffix}@test.local`);
-  await page.getByLabel("Số điện thoại").fill("0912345678");
-  await page.getByLabel(/Mật khẩu/).fill("Password#1");
-  await page.getByRole("button", { name: "Tạo tài khoản" }).click();
+  await page.getByLabel("Phone number").fill("0912345678");
+  await page.getByLabel(/Password/).fill("Password#1");
+  await page.getByRole("button", { name: "Create account" }).click();
   await expect(page).toHaveURL(/index\.html/);
 
-  await page.getByLabel("Ngày").fill(tomorrowVn());
-  await page.getByLabel("Gói").selectOption("120");
-  await page.getByLabel("Giờ bắt đầu").selectOption("09:00");
-  await page.getByLabel("Số khách").fill("2");
-  await page.getByRole("button", { name: "Tìm phòng trống" }).click();
+  await page.getByLabel("Date").fill(tomorrowVn());
+  await page.getByLabel("Duration").selectOption("120");
+  await page.getByLabel("Start time").selectOption("09:00");
+  await page.getByLabel("Guests").fill("2");
+  await page.getByRole("button", { name: "Find available rooms" }).click();
   await expect(page).toHaveURL(/rooms\.html/);
-  await page.getByRole("link", { name: "Đặt phòng này" }).first().click();
+  await page.getByRole("link", { name: "Book this room" }).first().click();
 
-  await expect(page.getByRole("heading", { name: "Chọn phim (tùy chọn)" })).toBeVisible();
-  await page.getByRole("button", { name: "Tiếp tục" }).click();
-  await expect(page.getByRole("heading", { name: "Đặt món trước (tùy chọn)" })).toBeVisible();
-  await page.getByRole("button", { name: "Tiếp tục" }).click();
-  await expect(page.getByRole("heading", { name: "Kiểm tra và xác nhận" })).toBeVisible();
-  await page.getByRole("button", { name: "Xác nhận đặt phòng" }).click();
+  await expect(page.getByRole("heading", { name: "Choose a movie (optional)" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Pre-order food (optional)" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue" }).click();
+  await expect(page.getByRole("heading", { name: "Review and confirm" })).toBeVisible();
+  await page.getByRole("button", { name: "Confirm booking" }).click();
 
   await expect(page).toHaveURL(/booking-view\.html\?code=CN-/);
   await expect(page.getByRole("heading", { level: 2 })).toContainText("CN-");
-  // Trả lại khung giờ để smoke test có thể chạy lặp trên cùng CSDL demo.
+  // Release the time slot so this smoke test can be rerun against the demo database.
   page.once("dialog", (dialog) => dialog.accept());
-  await page.getByRole("button", { name: "Hủy booking" }).click();
-  await expect(page.getByRole("heading", { level: 2 })).toContainText("Đã hủy");
+  await page.getByRole("button", { name: "Cancel booking" }).click();
+  await expect(page.getByRole("heading", { level: 2 })).toContainText("Cancelled");
 });

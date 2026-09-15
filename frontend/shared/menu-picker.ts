@@ -13,7 +13,7 @@ export async function mountMenuPicker(host: HTMLElement, initial: MenuSelection[
   const menu = await api.get<MenuItem[]>("/api/menu-items");
   const selected = new Map(initial.map((x) => [x.menuItemId, x.quantity]));
 
-  host.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Món</th><th>Giá</th><th>Số lượng</th></tr></thead><tbody>${menu
+  host.innerHTML = `<div class="table-wrap"><table><thead><tr><th>Item</th><th>Price</th><th>Quantity</th></tr></thead><tbody>${menu
     .map((m) => `<tr><td>${escapeHtml(m.name)}<br><span class="muted">${label(m.category)}</span></td><td>${money(m.priceVnd)}</td>
       <td><input type="number" min="0" max="20" value="${selected.get(m.id) ?? 0}" data-id="${m.id}" style="width:80px"></td></tr>`)
     .join("")}</tbody></table></div>`;

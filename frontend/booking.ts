@@ -9,7 +9,7 @@ import type { Room, Movie, Booking } from "./shared/types";
 import { mountMoviePicker } from "./shared/movie-picker";
 import { mountMenuPicker } from "./shared/menu-picker";
 
-await mountLayout("Đặt phòng");
+await mountLayout("Book a room");
 const me = await requireRole("CUSTOMER"); // nhân viên đặt hộ dùng staff/walk-in.html
 
 const p = new URLSearchParams(location.search);
@@ -25,7 +25,7 @@ let movie: Movie | null = null;
 let menuPicker: Awaited<ReturnType<typeof mountMenuPicker>> | null = null;
 let step = 1;
 
-$("#summary").innerHTML = `<strong>${escapeHtml(room.name)}</strong> · ${sel.date} ${sel.startTime} · ${sel.duration / 60} giờ · ${sel.guests} khách · Tiền phòng <strong>${money(roomTotal)}</strong>`;
+$("#summary").innerHTML = `<strong>${escapeHtml(room.name)}</strong> · ${sel.date} ${sel.startTime} · ${sel.duration / 60}-hour session · ${sel.guests} guests · Room charge <strong>${money(roomTotal)}</strong>`;
 
 // ---- Bước 2: phim (Thành Lê) – chỉ phim ACTIVE và dài <= gói - 10 phút (MOV02, MOV03); tìm kiếm + phân trang trong shared/movie-picker.ts ----
 let pickerMounted = false;
@@ -45,10 +45,10 @@ async function renderMenuStep() {
 
 function renderReview() {
   $("#review").innerHTML = `<table><tbody>
-    <tr><td>Phòng ${escapeHtml(room.name)} · ${sel.date} ${sel.startTime} · ${sel.duration / 60} giờ</td><td class="right">${money(roomTotal)}</td></tr>
-    <tr><td>Phim: ${movie ? escapeHtml(movie.title) : "Chọn tại quán"}</td><td class="right">0đ</td></tr>
+    <tr><td>Room ${escapeHtml(room.name)} · ${sel.date} ${sel.startTime} · ${sel.duration / 60}-hour session</td><td class="right">${money(roomTotal)}</td></tr>
+    <tr><td>Movie: ${movie ? escapeHtml(movie.title) : "Choose at the café"}</td><td class="right">${money(0)}</td></tr>
     ${(menuPicker?.lines ?? []).map(({ item, quantity }) => `<tr><td>${escapeHtml(item.name)} × ${quantity}</td><td class="right">${money(item.priceVnd * quantity)}</td></tr>`).join("")}
-    <tr><th>Tổng dự kiến</th><th class="right">${money(roomTotal + (menuPicker?.totalVnd ?? 0))}</th></tr></tbody></table>`;
+    <tr><th>Estimated total</th><th class="right">${money(roomTotal + (menuPicker?.totalVnd ?? 0))}</th></tr></tbody></table>`;
   ($("#contactName") as HTMLInputElement).value ||= me.name;
   ($("#contactPhone") as HTMLInputElement).value ||= me.phone;
 }
@@ -78,15 +78,15 @@ $<HTMLFormElement>("#confirm-form").addEventListener("submit", async (e) => {
   btn.disabled = true;
   try {
     const b = await api.post<Booking>("/api/bookings", body, { idempotencyKey: idemKey });
-    toast(`Đặt phòng thành công, mã ${b.code}`, "success");
+    toast(`Booking ${b.code} created successfully`, "success");
     location.href = `./booking-view.html?code=${encodeURIComponent(b.code)}`;
   } catch (err) {
     if (err instanceof ApiError && err.code === "ROOM_TAKEN") {
       const suggest = (err.details as { suggest?: string } | undefined)?.suggest;
-      toast(`Khung giờ vừa được đặt.${suggest ? ` Gợi ý gần nhất: ${new Date(suggest).toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}` : ""}`, "error");
+      toast(`This time slot was just booked.${suggest ? ` Nearest available time: ${new Date(suggest).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}` : ""}`, "error");
       idemKey = newIdempotencyKey();
     } else if (err instanceof ApiError && err.code === "PRICE_CHANGED") {
-      toast("Giá đã thay đổi, vui lòng xem lại và xác nhận lại", "error");
+      toast("The price has changed. Please review the total and confirm again.", "error");
       menuPicker = null; await renderMenuStep(); renderReview();
       idemKey = newIdempotencyKey();
     } else if (err instanceof Error && err.message !== "redirecting") {

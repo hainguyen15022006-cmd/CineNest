@@ -2,7 +2,7 @@
 import { mountLayout, $, formData, run } from "./shared/layout";
 import { api } from "./shared/api";
 
-await mountLayout("Đăng nhập");
+await mountLayout("Sign in");
 const form = $<HTMLFormElement>("#login-form");
 form.addEventListener("submit", async (e) => {
   e.preventDefault();

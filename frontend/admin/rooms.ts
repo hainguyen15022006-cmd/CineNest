@@ -5,14 +5,14 @@ import { money } from "../shared/format";
 import { mountCrud } from "./crud";
 import type { Room } from "../shared/types";
 
-await mountLayout("Quản lý phòng và giá");
+await mountLayout("Room and pricing management");
 await requireRole("MANAGER");
 const split = (s: unknown) => String(s ?? "").split(",").map((x) => x.trim()).filter(Boolean);
 mountCrud<Room>({
   listUrl: "/api/admin/rooms", createUrl: "/api/admin/rooms", updateUrl: (id) => `/api/admin/rooms/${id}`, formSel: "#room-form", listSel: "#list",
   columns: [
-    { title: "Phòng", render: (r) => escapeHtml(r.name) }, { title: "Sức chứa", render: (r) => String(r.capacity) },
-    { title: "Giá/giờ", render: (r) => money(r.hourlyPriceVnd) }, { title: "Trạng thái", render: (r) => badge(r.isActive ? "READY" : "CANCELLED").replace("Đã chuẩn bị", "Hoạt động").replace("Đã hủy", "Đóng") },
+    { title: "Room", render: (r) => escapeHtml(r.name) }, { title: "Capacity", render: (r) => String(r.capacity) },
+    { title: "Hourly rate", render: (r) => money(r.hourlyPriceVnd) }, { title: "Status", render: (r) => badge(r.isActive ? "READY" : "CANCELLED").replace("Ready", "Active").replace("Cancelled", "Closed") },
   ],
   toBody: (f) => ({ name: f.name, capacity: Number(f.capacity), hourlyPriceVnd: Number(f.hourlyPriceVnd), isActive: f.isActive === "true", description: String(f.description ?? ""), amenities: split(f.amenities), images: split(f.images) }),
   fillForm: (form, r) => {

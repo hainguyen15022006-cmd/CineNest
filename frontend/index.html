@@ -1,27 +1,27 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Tìm phòng – CineNest</title>
+  <title>Find a room – CineNest</title>
 </head>
 <body>
   <!-- Chủ sở hữu: Chúc (người 2) · Đặc tả: trang 10 – Trang chủ có form tìm phòng -->
   <header id="app-header"></header>
   <main>
-    <h1>Tìm phòng</h1>
+    <h1>Find a room</h1>
 
     <form id="search-form" class="card">
       <div class="row">
-        <div class="field"><label for="date">Ngày</label><input id="date" name="date" type="date" required></div>
-        <div class="field"><label for="duration">Gói</label><select id="duration" name="duration"><option value="120">2 giờ</option><option value="180">3 giờ</option></select></div>
-        <div class="field"><label for="startTime">Giờ bắt đầu</label><select id="startTime" name="startTime"></select></div>
-        <div class="field"><label for="guests">Số khách</label><input id="guests" name="guests" type="number" min="1" max="4" value="2" required></div>
-        <div class="field"><button type="submit">Tìm phòng trống</button></div>
+        <div class="field"><label for="date">Date</label><input id="date" name="date" type="date" required></div>
+        <div class="field"><label for="duration">Duration</label><select id="duration" name="duration"><option value="120">2 hours</option><option value="180">3 hours</option></select></div>
+        <div class="field"><label for="startTime">Start time</label><select id="startTime" name="startTime"></select></div>
+        <div class="field"><label for="guests">Guests</label><input id="guests" name="guests" type="number" min="1" max="4" value="2" required></div>
+        <div class="field"><button type="submit">Find available rooms</button></div>
       </div>
-      <p class="muted">Mở cửa 09:00–23:00 · gói 2 hoặc 3 giờ · đặt trước tối đa 14 ngày, sớm nhất 30 phút.</p>
+      <p class="muted">Open 09:00–23:00 · choose a 2- or 3-hour session · book up to 14 days ahead and at least 30 minutes before the start time.</p>
     </form>
-    <h2>Các phòng</h2>
+    <h2>Rooms</h2>
     <div id="rooms" class="grid"></div>
   </main>
   <script type="module" src="./index.ts"></script>

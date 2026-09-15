@@ -6,11 +6,11 @@ import { todayVn, startTimeOptions } from "../shared/format";
 import type { Room, Booking } from "../shared/types";
 import { mountMoviePicker } from "../shared/movie-picker";
 
-await mountLayout("Khách tại quầy");
+await mountLayout("Walk-in booking");
 await requireRole("STAFF");
 const form = $<HTMLFormElement>("#walkin-form");
 const rooms = await api.get<Room[]>("/api/rooms");
-$("#roomId").innerHTML = rooms.map((r) => `<option value="${r.id}">${r.name} (tối đa ${r.capacity})</option>`).join("");
+$("#roomId").innerHTML = rooms.map((r) => `<option value="${r.id}">${r.name} (up to ${r.capacity})</option>`).join("");
 const date = $<HTMLInputElement>("#date"); date.value = todayVn(); date.min = todayVn();
 const duration = $<HTMLSelectElement>("#duration");
 const startTime = $<HTMLSelectElement>("#startTime");
@@ -33,7 +33,7 @@ form.addEventListener("submit", async (e) => {
       contactName: f.contactName, contactPhone: f.contactPhone, movieId }, { idempotencyKey: key });
     key = newIdempotencyKey();
     movieId = null;
-    toast(`Đã tạo booking ${b.code}`, "success");
-    $("#result").innerHTML = `<p class="card">Booking <strong>${b.code}</strong> – <a href="./booking-detail.html?id=${b.id}">mở chi tiết để check-in</a></p>`;
+    toast(`Booking ${b.code} created`, "success");
+    $("#result").innerHTML = `<p class="card">Booking <strong>${b.code}</strong> – <a href="./booking-detail.html?id=${b.id}">open details to check in</a></p>`;
   }, form.querySelector("button"));
 });

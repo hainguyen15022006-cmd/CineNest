@@ -11,10 +11,10 @@ import { label } from "./format";
 import "./styles.css";
 
 const NAV: { role: "GUEST" | "CUSTOMER" | "STAFF" | "MANAGER"; items: [string, string][] }[] = [
-  { role: "GUEST", items: [["Tìm phòng", "index.html"], ["Đăng nhập", "login.html"], ["Đăng ký", "register.html"]] },
-  { role: "CUSTOMER", items: [["Tìm phòng", "index.html"], ["Booking của tôi", "my-bookings.html"]] },
-  { role: "STAFF", items: [["Lịch hôm nay", "staff/schedule.html"], ["Khách tại quầy", "staff/walk-in.html"], ["Chuẩn bị phim", "staff/movie-preparation.html"], ["Đơn món", "staff/orders.html"]] },
-  { role: "MANAGER", items: [["Quản trị", "admin/index.html"], ["Duyệt điều chỉnh", "admin/adjustments.html"], ["Báo cáo", "admin/reports.html"]] },
+  { role: "GUEST", items: [["Find a room", "index.html"], ["Sign in", "login.html"], ["Create account", "register.html"]] },
+  { role: "CUSTOMER", items: [["Find a room", "index.html"], ["My bookings", "my-bookings.html"]] },
+  { role: "STAFF", items: [["Today's schedule", "staff/schedule.html"], ["Walk-in booking", "staff/walk-in.html"], ["Movie preparation", "staff/movie-preparation.html"], ["Food orders", "staff/orders.html"]] },
+  { role: "MANAGER", items: [["Management", "admin/index.html"], ["Adjustment approvals", "admin/adjustments.html"], ["Reports", "admin/reports.html"]] },
 ];
 
 export async function mountLayout(title?: string): Promise<Me | null> {
@@ -27,22 +27,22 @@ export async function mountLayout(title?: string): Promise<Me | null> {
   header.innerHTML = `
     <div class="wrap">
       <a class="brand" href="${base}index.html">🎬 CineNest</a>
-      <nav aria-label="Điều hướng chính">
+      <nav aria-label="Main navigation">
         ${groups.flatMap((g) => g.items).map(([text, href]) => `<a href="${base}${href}">${text}</a>`).join("")}
       </nav>
-      <div class="me">${me ? `<span>${escapeHtml(me.name)} · ${label(me.role)}</span> <button type="button" id="btn-logout">Đăng xuất</button>` : ""}</div>
+      <div class="me">${me ? `<span>${escapeHtml(me.name)} · ${label(me.role)}</span> <button type="button" id="btn-logout">Sign out</button>` : ""}</div>
     </div>`;
   document.getElementById("btn-logout")?.addEventListener("click", () => void logout());
   if (title) document.title = `${title} – CineNest`;
 
-  if (new URLSearchParams(location.search).get("denied")) toast("Bạn không có quyền vào trang vừa yêu cầu", "error");
+  if (new URLSearchParams(location.search).get("denied")) toast("You do not have permission to access that page", "error");
   return me;
 }
 
 // ---------- tiện ích DOM ----------
 export function $<T extends HTMLElement = HTMLElement>(sel: string): T {
   const el = document.querySelector<T>(sel);
-  if (!el) throw new Error(`Không tìm thấy phần tử ${sel}`);
+  if (!el) throw new Error(`Element not found: ${sel}`);
   return el;
 }
 
@@ -68,7 +68,7 @@ export function toast(message: string, kind: "info" | "success" | "error" = "inf
 
 /** Hiển thị trạng thái tải/rỗng/lỗi trong một vùng */
 export function setState(target: HTMLElement, state: "loading" | "empty" | "error", message?: string): void {
-  const text = state === "loading" ? "Đang tải…" : state === "empty" ? (message ?? "Không có dữ liệu") : (message ?? "Có lỗi xảy ra");
+  const text = state === "loading" ? "Loading…" : state === "empty" ? (message ?? "No data available") : (message ?? "Something went wrong");
   target.innerHTML = `<p class="state state-${state}">${escapeHtml(text)}</p>`;
 }
 

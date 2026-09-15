@@ -21,9 +21,9 @@ async function main() {
 
   console.log("Tài khoản demo...");
   const [manager, staff, customer] = await Promise.all([
-    prisma.user.create({ data: { name: "Quản lý Demo", email: "manager@demo.local", phone: "0900000001", role: "MANAGER", passwordHash: await bcrypt.hash(PASSWORDS.manager, 10) } }),
-    prisma.user.create({ data: { name: "Nhân viên Demo", email: "staff@demo.local", phone: "0900000002", role: "STAFF", passwordHash: await bcrypt.hash(PASSWORDS.staff, 10) } }),
-    prisma.user.create({ data: { name: "Khách Demo", email: "khach@demo.local", phone: "0900000003", role: "CUSTOMER", passwordHash: await bcrypt.hash(PASSWORDS.customer, 10) } }),
+    prisma.user.create({ data: { name: "Demo Manager", email: "manager@demo.local", phone: "0900000001", role: "MANAGER", passwordHash: await bcrypt.hash(PASSWORDS.manager, 10) } }),
+    prisma.user.create({ data: { name: "Demo Staff", email: "staff@demo.local", phone: "0900000002", role: "STAFF", passwordHash: await bcrypt.hash(PASSWORDS.staff, 10) } }),
+    prisma.user.create({ data: { name: "Demo Customer", email: "khach@demo.local", phone: "0900000003", role: "CUSTOMER", passwordHash: await bcrypt.hash(PASSWORDS.customer, 10) } }),
   ]);
   const customer2 = await prisma.user.create({ data: { name: "Nguyễn Văn An", email: "an@demo.local", phone: "0900000004", role: "CUSTOMER", passwordHash: await bcrypt.hash(PASSWORDS.customer, 10) } });
 
@@ -37,16 +37,16 @@ async function main() {
 
   console.log("Phòng...");
   const roomDefs = [
-    { name: "Phòng 101 – Classic", capacity: 2, price: 89_000, amenities: ["Máy chiếu 120 inch", "Loa soundbar", "Điều hòa", "Ghế sofa đôi"] },
-    { name: "Phòng 102 – Classic", capacity: 2, price: 89_000, amenities: ["Máy chiếu 120 inch", "Loa soundbar", "Điều hòa", "Ghế sofa đôi"] },
-    { name: "Phòng 103 – Classic", capacity: 2, price: 89_000, amenities: ["Máy chiếu 120 inch", "Loa soundbar", "Điều hòa", "Ghế bệt"] },
-    { name: "Phòng 201 – Queen", capacity: 3, price: 99_000, amenities: ["Máy chiếu 150 inch", "Âm thanh 2.1", "Điều hòa", "Máy lọc không khí", "WC riêng"] },
-    { name: "Phòng 202 – Queen", capacity: 3, price: 99_000, amenities: ["Máy chiếu 150 inch", "Âm thanh 2.1", "Điều hòa", "Máy lọc không khí", "WC riêng"] },
-    { name: "Phòng 203 – Queen", capacity: 3, price: 99_000, amenities: ["Máy chiếu 150 inch", "Âm thanh 2.1", "Điều hòa", "WC riêng"] },
-    { name: "Phòng 301 – King", capacity: 4, price: 109_000, amenities: ["Máy chiếu 200 inch", "Âm thanh 5.1", "Điều hòa", "Máy lọc không khí", "WC riêng", "Cửa sổ"] },
-    { name: "Phòng 302 – King", capacity: 4, price: 109_000, amenities: ["Máy chiếu 200 inch", "Âm thanh 5.1", "Điều hòa", "Máy lọc không khí", "WC riêng", "Cửa sổ"] },
-    { name: "Phòng 401 – Group", capacity: 6, price: 139_000, amenities: ["Máy chiếu 200 inch", "Âm thanh 5.1", "Điều hòa", "Hai sofa", "Bàn lớn"] },
-    { name: "Phòng 402 – Group", capacity: 6, price: 139_000, amenities: ["Máy chiếu 200 inch", "Âm thanh 5.1", "Điều hòa", "Hai sofa", "Bàn lớn"] },
+    { name: "Room 101 – Classic", capacity: 2, price: 89_000, amenities: ["120-inch projector", "Soundbar", "Air conditioning", "Two-seat sofa"] },
+    { name: "Room 102 – Classic", capacity: 2, price: 89_000, amenities: ["120-inch projector", "Soundbar", "Air conditioning", "Two-seat sofa"] },
+    { name: "Room 103 – Classic", capacity: 2, price: 89_000, amenities: ["120-inch projector", "Soundbar", "Air conditioning", "Floor seating"] },
+    { name: "Room 201 – Queen", capacity: 3, price: 99_000, amenities: ["150-inch projector", "2.1 sound system", "Air conditioning", "Air purifier", "Private restroom"] },
+    { name: "Room 202 – Queen", capacity: 3, price: 99_000, amenities: ["150-inch projector", "2.1 sound system", "Air conditioning", "Air purifier", "Private restroom"] },
+    { name: "Room 203 – Queen", capacity: 3, price: 99_000, amenities: ["150-inch projector", "2.1 sound system", "Air conditioning", "Private restroom"] },
+    { name: "Room 301 – King", capacity: 4, price: 109_000, amenities: ["200-inch projector", "5.1 sound system", "Air conditioning", "Air purifier", "Private restroom", "Window"] },
+    { name: "Room 302 – King", capacity: 4, price: 109_000, amenities: ["200-inch projector", "5.1 sound system", "Air conditioning", "Air purifier", "Private restroom", "Window"] },
+    { name: "Room 401 – Group", capacity: 6, price: 139_000, amenities: ["200-inch projector", "5.1 sound system", "Air conditioning", "Two sofas", "Large table"] },
+    { name: "Room 402 – Group", capacity: 6, price: 139_000, amenities: ["200-inch projector", "5.1 sound system", "Air conditioning", "Two sofas", "Large table"] },
   ];
   const rooms = [];
   for (const [i, r] of roomDefs.entries()) {
@@ -57,7 +57,7 @@ async function main() {
           capacity: r.capacity,
           hourlyPriceVnd: r.price,
           amenities: r.amenities,
-          description: `Phòng riêng cho ${r.capacity} người, chìa khóa riêng, không camera.`,
+          description: `Private room for up to ${r.capacity} guests, with a private key and no cameras.`,
           images: { create: [{ url: `https://picsum.photos/seed/room${i + 1}/800/500`, sortOrder: 0 }, { url: `https://picsum.photos/seed/room${i + 1}b/800/500`, sortOrder: 1 }] },
         },
       }),
@@ -120,10 +120,20 @@ async function main() {
     ["Mission: Impossible – Fallout", 2018, 147, "Hành động", "T13", "Mỹ"],
   ];
   const movies: { id: number; title: string; durationMinutes: number }[] = [];
+  const genreInEnglish: Record<string, string> = {
+    "Tâm lý": "Drama", "Tình cảm": "Romance", "Hài": "Comedy", "Hành động": "Action",
+    "Khoa học viễn tưởng": "Science Fiction", "Kinh dị": "Horror", "Hoạt hình": "Animation",
+  };
+  const countryInEnglish: Record<string, string> = {
+    "Việt Nam": "Vietnam", "Mỹ": "United States", "Hàn Quốc": "South Korea", "Nhật Bản": "Japan",
+    "Pháp": "France", "Ấn Độ": "India", "Anh": "United Kingdom", "Úc": "Australia",
+  };
   for (const [title, year, duration, genre, age, country] of movieDefs) {
+    const displayGenre = genreInEnglish[genre] ?? genre;
+    const displayCountry = countryInEnglish[country] ?? country;
     movies.push(
       await prisma.movie.create({
-        data: { title, genre, durationMinutes: duration, ageLabel: age, description: `${genre} · ${year} · ${country}`, posterUrl: null },
+        data: { title, genre: displayGenre, durationMinutes: duration, ageLabel: age, description: `${displayGenre} · ${year} · ${displayCountry}`, posterUrl: null },
       }),
     );
   }
@@ -133,10 +143,10 @@ async function main() {
 
   console.log("Menu...");
   const menuDefs: [string, "DRINK" | "SNACK" | "FOOD", number][] = [
-    ["Trà đào cam sả", "DRINK", 35_000], ["Trà sữa trân châu", "DRINK", 35_000], ["Cà phê sữa đá", "DRINK", 30_000], ["Cacao nóng", "DRINK", 35_000],
-    ["Nước ép cam", "DRINK", 40_000], ["Soda việt quất", "DRINK", 39_000], ["Bắp rang bơ", "SNACK", 40_000], ["Khoai tây chiên", "SNACK", 45_000],
-    ["Gà xiên que", "SNACK", 65_000], ["Nem chua rán", "SNACK", 55_000], ["Xúc xích nướng", "SNACK", 50_000], ["Pizza mini", "FOOD", 65_000],
-    ["Mì Ý sốt bò", "FOOD", 65_000], ["Bánh mì bò nướng", "FOOD", 50_000], ["Combo bắp + 2 nước", "SNACK", 99_000],
+    ["Peach orange lemongrass tea", "DRINK", 35_000], ["Pearl milk tea", "DRINK", 35_000], ["Vietnamese iced coffee", "DRINK", 30_000], ["Hot cocoa", "DRINK", 35_000],
+    ["Orange juice", "DRINK", 40_000], ["Blueberry soda", "DRINK", 39_000], ["Butter popcorn", "SNACK", 40_000], ["French fries", "SNACK", 45_000],
+    ["Chicken skewers", "SNACK", 65_000], ["Fried fermented pork rolls", "SNACK", 55_000], ["Grilled sausage", "SNACK", 50_000], ["Mini pizza", "FOOD", 65_000],
+    ["Beef spaghetti", "FOOD", 65_000], ["Grilled beef baguette", "FOOD", 50_000], ["Popcorn + 2 drinks combo", "SNACK", 99_000],
   ];
   const menu: { id: number; name: string; priceVnd: number }[] = [];
   for (const [i, [name, category, price]] of menuDefs.entries()) {
@@ -150,16 +160,16 @@ async function main() {
 
   type Seed = { room: number; date: string; time?: string; startAt?: Date; duration: number; status: "CONFIRMED" | "IN_USE" | "COMPLETED" | "CANCELLED" | "NO_SHOW"; pay?: "PAID" | "WAIVED"; customer?: number; movie?: number; items?: [number, number][]; orderStatus?: "PENDING" | "PREPARING" | "SERVED"; endedEarly?: string; adjustment?: { kind: "REDUCE" | "WAIVE"; amount?: number; reason: string; status?: "PENDING_APPROVAL" | "APPROVED" }; note?: string };
   const seeds: Seed[] = [
-    { room: 0, date: shiftDate(today, 1), time: "19:00", duration: 120, status: "CONFIRMED", customer: customer.id, movie: movie("Cô Ba Sài Gòn").id, items: [[0, 2], [6, 1]], note: "Sinh nhật" },
+    { room: 0, date: shiftDate(today, 1), time: "19:00", duration: 120, status: "CONFIRMED", customer: customer.id, movie: movie("Cô Ba Sài Gòn").id, items: [[0, 2], [6, 1]], note: "Birthday" },
     { room: 3, date: shiftDate(today, 2), time: "14:00", duration: 180, status: "CONFIRMED", customer: customer.id, movie: movie("Interstellar").id },
     { room: 1, date: today, startAt: addMinutes(roundedNow, -60), duration: 120, status: "IN_USE", customer: customer2.id, movie: movie("Hai Phượng").id, items: [[1, 2]], orderStatus: "PREPARING" },
     { room: 6, date: shiftDate(today, -1), time: "19:30", duration: 120, status: "COMPLETED", pay: "PAID", customer: customer.id, movie: movie("Toy Story").id, items: [[6, 1], [0, 2]], orderStatus: "SERVED" },
     { room: 2, date: shiftDate(today, -1), time: "14:00", duration: 120, status: "CANCELLED", customer: customer2.id },
     { room: 4, date: shiftDate(today, -1), time: "16:30", duration: 120, status: "NO_SHOW", customer: customer2.id },
-    { room: 7, date: shiftDate(today, -2), time: "20:00", duration: 120, status: "COMPLETED", customer: customer2.id, items: [[8, 1]], orderStatus: "SERVED", endedEarly: "Khách rời đi chưa thanh toán" },
-    { room: 5, date: today, startAt: addMinutes(roundedNow, -30), duration: 120, status: "IN_USE", customer: customer.id, movie: movie("Up").id, adjustment: { kind: "REDUCE", amount: 50_000, reason: "Máy chiếu lỗi 20 phút" } },
-    { room: 3, date: shiftDate(today, -3), time: "10:00", duration: 120, status: "COMPLETED", pay: "WAIVED", customer: customer2.id, adjustment: { kind: "WAIVE", reason: "Mất điện toàn bộ", status: "APPROVED" } },
-    { room: 2, date: today, startAt: addMinutes(roundedNow, -150), duration: 120, status: "CONFIRMED", customer: customer2.id, note: "Quá hạn chưa xử lý (EX06)" },
+    { room: 7, date: shiftDate(today, -2), time: "20:00", duration: 120, status: "COMPLETED", customer: customer2.id, items: [[8, 1]], orderStatus: "SERVED", endedEarly: "Customer left before paying" },
+    { room: 5, date: today, startAt: addMinutes(roundedNow, -30), duration: 120, status: "IN_USE", customer: customer.id, movie: movie("Up").id, adjustment: { kind: "REDUCE", amount: 50_000, reason: "Projector unavailable for 20 minutes" } },
+    { room: 3, date: shiftDate(today, -3), time: "10:00", duration: 120, status: "COMPLETED", pay: "WAIVED", customer: customer2.id, adjustment: { kind: "WAIVE", reason: "Full power outage", status: "APPROVED" } },
+    { room: 2, date: today, startAt: addMinutes(roundedNow, -150), duration: 120, status: "CONFIRMED", customer: customer2.id, note: "Overdue and awaiting action (EX06)" },
   ];
 
   for (const s of seeds) {

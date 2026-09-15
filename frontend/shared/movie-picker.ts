@@ -36,14 +36,14 @@ export function mountMoviePicker(host: HTMLElement, opts: MoviePickerOptions) {
   host.innerHTML = `
     <div class="movie-picker">
       <div class="row">
-        <div class="field" style="flex:2;min-width:200px"><label for="${name}-q">Tìm phim</label><input id="${name}-q" type="search" placeholder="Nhập tên phim…" autocomplete="off"></div>
-        <div class="field"><label for="${name}-genre">Thể loại</label><select id="${name}-genre"><option value="">Tất cả</option></select></div>
-        ${opts.maxMinutes ? `<label class="muted" style="padding-bottom:8px"><input type="checkbox" id="${name}-fit" checked> Chỉ phim vừa gói (≤ ${opts.maxMinutes} phút)</label>` : ""}
+        <div class="field" style="flex:2;min-width:200px"><label for="${name}-q">Search movies</label><input id="${name}-q" type="search" placeholder="Enter a movie title…" autocomplete="off"></div>
+        <div class="field"><label for="${name}-genre">Genre</label><select id="${name}-genre"><option value="">All</option></select></div>
+        ${opts.maxMinutes ? `<label class="muted" style="padding-bottom:8px"><input type="checkbox" id="${name}-fit" checked> Only movies that fit this session (≤ ${opts.maxMinutes} min)</label>` : ""}
       </div>
-      ${opts.allowNone ? `<label class="card"><input type="radio" name="${name}" value="" ${selectedId === null ? "checked" : ""}> ${escapeHtml(opts.noneLabel ?? "Chọn tại quán (chưa chọn phim)")}</label>` : ""}
+      ${opts.allowNone ? `<label class="card"><input type="radio" name="${name}" value="" ${selectedId === null ? "checked" : ""}> ${escapeHtml(opts.noneLabel ?? "Choose at the café (no movie selected)")}</label>` : ""}
       <p class="muted" id="${name}-count" aria-live="polite"></p>
       <div class="grid" id="${name}-grid"></div>
-      <div class="row" style="margin-top:8px"><button type="button" class="secondary small hidden" id="${name}-more">Xem thêm</button></div>
+      <div class="row" style="margin-top:8px"><button type="button" class="secondary small hidden" id="${name}-more">Show more</button></div>
     </div>`;
   const $q = host.querySelector<HTMLInputElement>(`#${name}-q`)!;
   const $genre = host.querySelector<HTMLSelectElement>(`#${name}-genre`)!;
@@ -57,14 +57,14 @@ export function mountMoviePicker(host: HTMLElement, opts: MoviePickerOptions) {
     return `<label class="card movie-card" style="${tooLong ? "opacity:.5" : ""}">
       <input type="radio" name="${name}" value="${m.id}" ${tooLong ? "disabled" : ""} ${selectedId === m.id ? "checked" : ""}>
       ${m.posterUrl ? `<img src="${escapeHtml(m.posterUrl)}" alt="" loading="lazy" width="60" height="90" data-movie-poster style="float:right;margin-left:8px;border-radius:4px;object-fit:cover">` : ""}
-      <strong>${escapeHtml(m.title)}</strong><br><span class="muted">${escapeHtml(m.genre)} · ${m.durationMinutes} phút · ${escapeHtml(m.ageLabel)}</span>
-      ${tooLong ? `<br><span class="error-text">Quá dài (tối đa ${opts.maxMinutes} phút)</span>` : ""}</label>`;
+      <strong>${escapeHtml(m.title)}</strong><br><span class="muted">${escapeHtml(m.genre)} · ${m.durationMinutes} min · ${escapeHtml(m.ageLabel)}</span>
+      ${tooLong ? `<br><span class="error-text">Too long (maximum ${opts.maxMinutes} min)</span>` : ""}</label>`;
   }
 
   function render(append: boolean) {
     const html = items.slice(append ? $grid.children.length : 0).map(card).join("");
     if (append) $grid.insertAdjacentHTML("beforeend", html); else $grid.innerHTML = html;
-    $count.textContent = total ? `${total} phim · đang hiện ${items.length}` : "Không có phim phù hợp";
+    $count.textContent = total ? `${total} movies · showing ${items.length}` : "No matching movies";
     $more.classList.toggle("hidden", items.length >= total);
     $grid.querySelectorAll<HTMLInputElement>("input[type=radio]").forEach((i) =>
       i.addEventListener("change", () => choose(items.find((m) => m.id === Number(i.value)) ?? null)),
@@ -80,7 +80,7 @@ export function mountMoviePicker(host: HTMLElement, opts: MoviePickerOptions) {
 
   async function load(next = false) {
     page = next ? page + 1 : 1;
-    $count.textContent = "Đang tải…";
+    $count.textContent = "Loading…";
     try {
       const res = await api.get<Paged<Movie>>(`/api/movies${qs({
         q: $q.value.trim() || undefined, genre: $genre.value || undefined, page, limit,
@@ -92,7 +92,7 @@ export function mountMoviePicker(host: HTMLElement, opts: MoviePickerOptions) {
       if (!next && selected && !items.some((m) => m.id === selected!.id)) items = [selected, ...items];
       render(next);
     } catch (e) {
-      $count.textContent = `Lỗi tải phim: ${(e as Error).message}`;
+      $count.textContent = `Could not load movies: ${(e as Error).message}`;
     }
   }
 

@@ -1,22 +1,22 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Đăng ký – CineNest</title>
+  <title>Create account – CineNest</title>
 </head>
 <body>
   <!-- Chủ sở hữu: Dương (người 1) · Đặc tả: trang 3 – hệ thống luôn gán CUSTOMER -->
   <header id="app-header"></header>
   <main>
-    <h1>Đăng ký</h1>
+    <h1>Create account</h1>
 
     <form id="register-form" class="card" style="max-width:420px">
-      <div class="field"><label for="name">Họ tên</label><input id="name" name="name" required minlength="2"></div>
+      <div class="field"><label for="name">Full name</label><input id="name" name="name" required minlength="2"></div>
       <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" required autocomplete="username"></div>
-      <div class="field"><label for="phone">Số điện thoại</label><input id="phone" name="phone" required pattern="0[0-9]{9,10}"></div>
-      <div class="field"><label for="password">Mật khẩu (≥ 8 ký tự)</label><input id="password" name="password" type="password" required minlength="8" autocomplete="new-password"></div>
-      <button type="submit">Tạo tài khoản</button>
+      <div class="field"><label for="phone">Phone number</label><input id="phone" name="phone" required pattern="0[0-9]{9,10}"></div>
+      <div class="field"><label for="password">Password (at least 8 characters)</label><input id="password" name="password" type="password" required minlength="8" autocomplete="new-password"></div>
+      <button type="submit">Create account</button>
     </form>
   </main>
   <script type="module" src="./register.ts"></script>

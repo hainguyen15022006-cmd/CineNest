@@ -1,23 +1,23 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Đơn món – CineNest</title>
+  <title>Food orders – CineNest</title>
 </head>
 <body>
   <!-- Chủ sở hữu: Sơn (người 5) · Đặc tả: trang 7 – PENDING → PREPARING → SERVED; thêm món cho booking IN_USE -->
   <header id="app-header"></header>
   <main>
-    <h1>Đơn món</h1>
+    <h1>Food orders</h1>
 
     <form id="add-form" class="card"><div class="row">
-      <div class="field"><label for="bookingId">Mã số booking (id)</label><input id="bookingId" name="bookingId" type="number" min="1" required></div>
-      <div class="field"><label for="menuItemId">Món</label><select id="menuItemId" name="menuItemId" required></select></div>
-      <div class="field"><label for="quantity">Số lượng</label><input id="quantity" name="quantity" type="number" min="1" max="20" value="1" required></div>
-      <div class="field"><button type="submit">Thêm món</button></div>
+      <div class="field"><label for="bookingId">Booking ID</label><input id="bookingId" name="bookingId" type="number" min="1" required></div>
+      <div class="field"><label for="menuItemId">Item</label><select id="menuItemId" name="menuItemId" required></select></div>
+      <div class="field"><label for="quantity">Quantity</label><input id="quantity" name="quantity" type="number" min="1" max="20" value="1" required></div>
+      <div class="field"><button type="submit">Add item</button></div>
     </div></form>
-    <div class="row"><button type="button" data-status="">Đang xử lý</button><button type="button" class="secondary" data-status="SERVED">Đã phục vụ</button><button type="button" class="secondary" data-status="CANCELLED">Đã hủy</button></div>
+    <div class="row"><button type="button" data-status="">In progress</button><button type="button" class="secondary" data-status="SERVED">Served</button><button type="button" class="secondary" data-status="CANCELLED">Cancelled</button></div>
     <div id="list" class="table-wrap" style="margin-top:12px"></div>
   </main>
   <script type="module" src="./orders.ts"></script>

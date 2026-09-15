@@ -1,34 +1,34 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Đặt phòng – CineNest</title>
+  <title>Book a room – CineNest</title>
 </head>
 <body>
   <!-- Chủ sở hữu: Hải Anh (người 3); bước 2 phim – Thành Lê; bước 3 món – Sơn · Đặc tả: trang 5, 10 – 4 bước trong MỘT trang; không giữ chỗ tạm; máy chủ kiểm tra lại khi xác nhận -->
   <header id="app-header"></header>
   <main>
-    <h1>Đặt phòng</h1>
+    <h1>Book a room</h1>
 
-    <div class="steps"><span data-step="1" class="active">1 Phòng/giờ</span><span data-step="2">2 Phim</span><span data-step="3">3 Món</span><span data-step="4">4 Xác nhận</span></div>
+    <div class="steps"><span data-step="1" class="active">1 Room & time</span><span data-step="2">2 Movie</span><span data-step="3">3 Food</span><span data-step="4">4 Review</span></div>
     <div id="summary" class="card"></div>
-    <section id="step-2" class="card hidden"><h2>Chọn phim (tùy chọn)</h2><div id="movies"></div></section>
-    <section id="step-3" class="card hidden"><h2>Đặt món trước (tùy chọn)</h2><div id="menu"></div></section>
+    <section id="step-2" class="card hidden"><h2>Choose a movie (optional)</h2><div id="movies"></div></section>
+    <section id="step-3" class="card hidden"><h2>Pre-order food (optional)</h2><div id="menu"></div></section>
     <section id="step-4" class="card hidden">
-      <h2>Kiểm tra và xác nhận</h2>
+      <h2>Review and confirm</h2>
       <div id="review"></div>
       <form id="confirm-form">
         <div class="row">
-          <div class="field"><label for="contactName">Họ tên liên hệ</label><input id="contactName" name="contactName" required minlength="2"></div>
-          <div class="field"><label for="contactPhone">Số điện thoại</label><input id="contactPhone" name="contactPhone" required pattern="0[0-9]{9,10}"></div>
-          <div class="field"><label for="note">Ghi chú</label><input id="note" name="note" maxlength="500"></div>
+          <div class="field"><label for="contactName">Contact name</label><input id="contactName" name="contactName" required minlength="2"></div>
+          <div class="field"><label for="contactPhone">Phone number</label><input id="contactPhone" name="contactPhone" required pattern="0[0-9]{9,10}"></div>
+          <div class="field"><label for="note">Notes</label><input id="note" name="note" maxlength="500"></div>
         </div>
-        <p class="muted">Chính sách: tự hủy khi còn ≥ 2 giờ trước giờ bắt đầu; đến muộn không đổi giờ kết thúc; không đặt cọc, thanh toán tại quầy.</p>
-        <button type="submit" id="btn-confirm">Xác nhận đặt phòng</button>
+        <p class="muted">Policy: you may cancel up to 2 hours before the start time; arriving late does not extend the end time; no deposit is required and payment is made at the counter.</p>
+        <button type="submit" id="btn-confirm">Confirm booking</button>
       </form>
     </section>
-    <div class="row" style="margin-top:12px"><button type="button" class="secondary" id="btn-prev">Quay lại</button><button type="button" id="btn-next">Tiếp tục</button></div>
+    <div class="row" style="margin-top:12px"><button type="button" class="secondary" id="btn-prev">Back</button><button type="button" id="btn-next">Continue</button></div>
   </main>
   <script type="module" src="./booking.ts"></script>
 </body>

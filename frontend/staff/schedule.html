@@ -1,20 +1,20 @@
 <!doctype html>
-<html lang="vi">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Lịch ngày theo phòng – CineNest</title>
+  <title>Daily room schedule – CineNest</title>
 </head>
 <body>
   <!-- Chủ sở hữu: Hải Anh (người 3) · Đặc tả: trang 10 – lịch dạng bảng theo phòng; bộ lọc "đã qua giờ nhưng chưa xử lý" (EX06) -->
   <header id="app-header"></header>
   <main>
-    <h1>Lịch ngày theo phòng</h1>
+    <h1>Daily room schedule</h1>
 
-    <form id="date-form" class="row"><div class="field"><label for="date">Ngày</label><input id="date" name="date" type="date"></div><div class="field"><button type="submit">Xem</button></div></form>
-    <p class="muted">Màu kèm chữ: xanh dương = đã xác nhận, vàng = đang sử dụng, xanh lá = hoàn thành, xám = dọn phòng. Bấm vào ô để mở chi tiết.</p>
+    <form id="date-form" class="row"><div class="field"><label for="date">Date</label><input id="date" name="date" type="date"></div><div class="field"><button type="submit">View</button></div></form>
+    <p class="muted">Colors are paired with labels: blue = confirmed, yellow = in use, green = completed, gray = cleaning. Select a cell to view details.</p>
     <div id="grid" class="table-wrap"></div>
-    <h2>Đã qua giờ nhưng chưa xử lý</h2>
+    <h2>Overdue bookings requiring action</h2>
     <div id="overdue" class="table-wrap"></div>
   </main>
   <script type="module" src="./schedule.ts"></script>
