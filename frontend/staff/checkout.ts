@@ -51,10 +51,16 @@ $<HTMLFormElement>("#adj-form").addEventListener("submit", async (e) => {
 let payKey = newIdempotencyKey(); // giữ nguyên khi thử lại (T10)
 $<HTMLFormElement>("#pay-form").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const button = $<HTMLButtonElement>("#btn-pay");
+  if (button.disabled) return;
   if (!confirm("Confirm that the full amount due has been collected?")) return;
+  button.disabled = true;
+  // Refresh AFTER run finishes: its generic button reset must not override invoice eligibility.
   await run(async () => {
     const r = await api.post<{ payment: { amountVnd: number } }>(`/api/staff/bookings/${bookingId}/checkout`, formData($("#pay-form") as HTMLFormElement), { idempotencyKey: payKey });
-    toast(`Payment recorded: ${money(r.payment.amountVnd)}`, "success"); payKey = newIdempotencyKey(); await load();
-  }, $("#btn-pay") as HTMLButtonElement);
+    toast(`Payment recorded: ${money(r.payment.amountVnd)}`, "success");
+    payKey = newIdempotencyKey();
+  });
+  await load();
 });
 await load();

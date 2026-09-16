@@ -123,7 +123,7 @@ describe("Module 3 – booking: quy tắc, chống trùng hai lớp, chống g�
     expect(cancel.body.data.status).toBe("CANCELLED");
   });
 
-  it("T14: đặt tại quầy đi qua cùng cơ chế chống trùng", async () => {
+  it("Counter route rejects an already-booked online slot (sequential regression)", async () => {
     const room = await createTestRoom();
     const customer = await registerAndLogin(app);
     const staff = await loginAs(app, "STAFF");
@@ -352,7 +352,13 @@ describe("Module 3 – booking: quy tắc, chống trùng hai lớp, chống g�
     const firstSuffix = firstCode.slice(-4);
     const prefix = firstCode.slice(0, -4);
     const existingCodes = new Set((await prisma.booking.findMany({ select: { code: true } })).map(({ code }) => code));
-    const alternateSuffix = ["AAAA", "AAAB", "AAAC", "AAAD", "AAAE"].find((suffix) => !existingCodes.has(prefix + suffix));
+    // Previous runs may already occupy the first few forced suffixes. Find a free code
+    // across the real alphabet instead of requiring a database reset after five runs.
+    let alternateSuffix: string | undefined;
+    for (let n = 0; n < alphabet.length ** 4; n++) {
+      const suffix = [3, 2, 1, 0].map((power) => alphabet[Math.floor(n / alphabet.length ** power) % alphabet.length]).join("");
+      if (!existingCodes.has(prefix + suffix)) { alternateSuffix = suffix; break; }
+    }
     expect(alternateSuffix).toBeTruthy();
     const randomValues = [...firstSuffix, ...alternateSuffix!].map((character) => (alphabet.indexOf(character) + 0.25) / alphabet.length);
     const random = vi.spyOn(Math, "random").mockImplementation(() => randomValues.shift() ?? 0);
