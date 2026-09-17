@@ -204,6 +204,27 @@ describe("Module 5 - menu and pre-orders", () => {
 
     expect(invalid.status).toBe(409);
     expect(invalid.body.error.code).toBe("INVALID_ORDER_TRANSITION");
+
+    const cancellable = await staff.agent.post(`/api/staff/bookings/${booking.id}/orders`).send({
+      items: [
+        {
+          menuItemId: item.id,
+          quantity: 1,
+        },
+      ],
+    });
+
+    const cancelled = await staff.agent.patch(`/api/staff/orders/${cancellable.body.data.id}/status`).send({
+      status: "CANCELLED",
+    });
+
+    expect(cancelled.status).toBe(200);
+    expect(cancelled.body.data.status).toBe("CANCELLED");
+
+    const cancelledOrders = await staff.agent.get("/api/staff/orders?status=CANCELLED");
+    expect(cancelledOrders.status).toBe(200);
+    expect(cancelledOrders.body.data.some((order: { id: number }) => order.id === cancellable.body.data.id)).toBe(true);
+    expect(cancelledOrders.body.data.every((order: { status: string }) => order.status === "CANCELLED")).toBe(true);
   });
 
   it("rejects processing food orders when the booking is not in use", async () => {
@@ -230,6 +251,24 @@ describe("Module 5 - menu and pre-orders", () => {
 
     expect(rejectedAdd.status).toBe(409);
     expect(rejectedAdd.body.error.code).toBe("NOT_IN_USE");
+
+    const paidBooking = await createMenuTestBooking("IN_USE");
+    await prisma.booking.update({
+      where: { id: paidBooking.id },
+      data: { paymentStatus: "PAID" },
+    });
+
+    const rejectedPaidAdd = await staff.agent.post(`/api/staff/bookings/${paidBooking.id}/orders`).send({
+      items: [
+        {
+          menuItemId: item.id,
+          quantity: 1,
+        },
+      ],
+    });
+
+    expect(rejectedPaidAdd.status).toBe(409);
+    expect(rejectedPaidAdd.body.error.code).toBe("ALREADY_PAID");
 
     const inUseBooking = await createMenuTestBooking("IN_USE");
 
