@@ -45,10 +45,14 @@ if (!FILE) {
   process.exit(1);
 }
 for (const [name, value] of [["limit", LIMIT], ["min-votes", MIN_VOTES], ["min-runtime", MIN_RUNTIME], ["max-runtime", MAX_RUNTIME]] as const) {
-  if (!Number.isFinite(value) || value < 0) {
-    console.error(`--${name} phải là một số không âm`);
+  if (!Number.isSafeInteger(value) || value < (name === "min-votes" ? 0 : 1)) {
+    console.error(`--${name} phải là số nguyên ${name === "min-votes" ? "không âm" : "dương"}`);
     process.exit(1);
   }
+}
+if (MIN_RUNTIME > MAX_RUNTIME) {
+  console.error("--min-runtime không được lớn hơn --max-runtime");
+  process.exit(1);
 }
 
 // ---------- ánh xạ thể loại sang tiếng Việt ----------
@@ -181,12 +185,13 @@ async function main() {
   const existing = await prisma.movie.findMany({ select: { source: true, externalId: true, title: true, durationMinutes: true } });
   const known = new Set(existing.map((e) => e.externalId && e.source ? `${e.source}:${e.externalId}` : fallbackKey(e.title, e.durationMinutes)));
   const unique: MovieRow[] = [];
-  for (const r of fileUnique) {
+  // LIMIT xác định cùng một tập top N của file ở mọi lần chạy. Nếu chỉ dừng sau N
+  // bản ghi *mới*, lần chạy thứ hai sẽ nhập tiếp phần đuôi và không còn tái lập được.
+  for (const r of fileUnique.slice(0, LIMIT)) {
     const k = r.externalId ? `${r.source}:${r.externalId}` : fallbackKey(r.title, r.durationMinutes);
     if (known.has(k)) { skipped++; continue; }
     known.add(k);
     unique.push(r);
-    if (unique.length >= LIMIT) break;
   }
 
   console.log(`Định dạng: ${format} · đọc ${seen} dòng · bỏ ${skipped} · sẽ nhập ${unique.length}`);

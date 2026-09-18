@@ -53,7 +53,9 @@ class Customer(HttpUser):
 
     def _search(self):
         q = {
-            "date": (date.today() + timedelta(days=random.randint(0, 13))).isoformat(),
+            # Luôn dùng ngày tương lai. Nếu chọn ngày hiện tại, bài đo chạy buổi chiều/tối
+            # sẽ tạo 422 TOO_SOON cho các slot đã qua và làm sai error rate của PF01/PF03.
+            "date": (date.today() + timedelta(days=random.randint(1, 13))).isoformat(),
             "startTime": random.choice(["09:00", "11:30", "14:00", "16:30", "19:00", "20:30"]),
             "duration": 120,
             "guests": 2,

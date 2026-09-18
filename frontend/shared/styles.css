@@ -11,7 +11,7 @@ main { max-width: 1100px; margin: 0 auto; padding: 16px; }
 h1 { font-size: 1.5rem; margin: 8px 0 16px; color: var(--brand-dark); }
 h2 { font-size: 1.1rem; margin: 20px 0 8px; color: var(--brand); }
 
-#app-header { background: var(--brand-dark); color: #fff; }
+#app-header { min-height: 49px; background: var(--brand-dark); color: #fff; }
 #app-header .wrap { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
 #app-header .brand { color: #fff; font-weight: 700; text-decoration: none; font-size: 1.1rem; }
 #app-header nav { display: flex; flex-wrap: wrap; gap: 4px 12px; }
@@ -73,6 +73,7 @@ th { background: #e3eef1; color: #2d3748; font-weight: 600; }
 .hidden { display: none !important; }
 
 @media (max-width: 480px) {
+  #app-header { min-height: 85px; }
   main { padding: 10px; }
   th, td { padding: 6px; font-size: .85rem; }
 }

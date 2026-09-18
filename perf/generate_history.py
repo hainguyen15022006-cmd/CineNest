@@ -9,10 +9,17 @@ from __future__ import annotations
 
 import os
 import random
+import sys
 from datetime import datetime, time, timedelta, timezone
 from pathlib import Path
 
 import psycopg
+
+if sys.platform == "win32":
+    # PowerShell/CI có thể dùng code page cp1252; ép UTF-8 để thông báo tiếng Việt
+    # không làm script báo lỗi sau khi đã ghi đủ dữ liệu.
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 
 SEED = int(os.getenv("PERF_HISTORY_SEED", "20260914"))
 TOTAL = 10_000

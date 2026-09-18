@@ -4,7 +4,11 @@ import { api, qs } from "./shared/api";
 import { money, todayVn, startTimeOptions } from "./shared/format";
 import type { Room } from "./shared/types";
 
-await mountLayout("Find a room");
+// Khởi động tải layout và phòng song song để ảnh phòng đầu tiên không phải chờ
+// xong request /me rồi mới bắt đầu (Lighthouse LCP trên trang công khai).
+const layoutReady = mountLayout("Find a room");
+const roomsRequest = api.get<Room[]>("/api/rooms");
+await layoutReady;
 
 const form = $<HTMLFormElement>("#search-form");
 const date = $<HTMLInputElement>("#date");
@@ -30,11 +34,11 @@ form.addEventListener("submit", (e) => {
 const roomsBox = $("#rooms");
 setState(roomsBox, "loading");
 try {
-  const rooms = await api.get<Room[]>("/api/rooms");
+  const rooms = await roomsRequest;
   roomsBox.innerHTML = rooms.length
-    ? rooms.map((r) => `
+    ? rooms.map((r, index) => `
       <article class="card">
-        ${r.images?.[0] ? `<img src="${escapeHtml(r.images[0].url)}" alt="" style="width:100%;border-radius:8px;aspect-ratio:16/10;object-fit:cover">` : ""}
+        ${r.images?.[0] ? `<img src="${escapeHtml(r.images[0].url)}" alt="${escapeHtml(r.name)}" width="800" height="500" decoding="async" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} style="width:100%;height:auto;border-radius:8px;aspect-ratio:16/10;object-fit:cover">` : ""}
         <h3 style="margin:8px 0 4px">${escapeHtml(r.name)}</h3>
         <p class="muted">Up to ${r.capacity} guests · ${money(r.hourlyPriceVnd)}/hour</p>
         <a class="btn small secondary" href="./room.html?id=${r.id}">View details</a>

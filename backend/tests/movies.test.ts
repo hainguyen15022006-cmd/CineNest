@@ -7,7 +7,7 @@ import request from "supertest";
 import { createApp } from "../src/app.js";
 import { closeDb, prisma } from "../src/core/prisma.js";
 import { computeWindow, vnToDate } from "../src/core/time.js";
-import { changeMovie, updateMovie, validateMovieForBooking } from "../src/modules/movies/movies.service.js";
+import { changeMovie, setPreparation, updateMovie, validateMovieForBooking } from "../src/modules/movies/movies.service.js";
 import { bookingPayload, createTestRoom, futureDate, key, loginAs, registerAndLogin, uid } from "./helpers.js";
 
 const app = createApp();
@@ -117,8 +117,15 @@ describe("Module 4 – danh mục phim: tìm kiếm, phân trang, lọc theo gó
     });
     const changed = await changeMovie(booking.id, newMovie.id, customer.id, false);
     expect(changed.preparationStatus).toBe("PENDING");
+    const staff = await loginAs(app, "STAFF");
+    const ready = await setPreparation(booking.id, "READY", changed.movieVersion, staff.id);
+    expect(ready?.preparationStatus).toBe("READY");
     await updateMovie(newMovie.id, { isActive: false });
-    expect((await prisma.booking.findUnique({ where: { id: booking.id } }))?.preparationStatus).toBe("UNAVAILABLE");
+    const unavailable = await prisma.booking.findUniqueOrThrow({ where: { id: booking.id } });
+    expect(unavailable.preparationStatus).toBe("UNAVAILABLE");
+    expect(unavailable.movieVersion).toBe(changed.movieVersion + 1);
+    await expect(setPreparation(booking.id, "READY", changed.movieVersion, staff.id)).rejects.toMatchObject({ code: "MOVIE_CHANGED" });
+    await expect(setPreparation(booking.id, "READY", unavailable.movieVersion, staff.id)).rejects.toMatchObject({ code: "MOVIE_UNAVAILABLE" });
   });
 
   it("T13: hai phòng khác nhau được đặt cùng một phim", async () => {

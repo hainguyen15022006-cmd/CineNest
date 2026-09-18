@@ -8,3 +8,13 @@
 6. Sinh 10.000 booking lịch sử 12 tháng cho PF01 bằng `python perf/generate_history.py` (65% COMPLETED / 25% CANCELLED / 10% NO_SHOW, tối đa 5 lượt COMPLETED/phòng/ngày). Script có seed cố định, tôn trọng EXCLUDE và chỉ thay dữ liệu mã `PFH-`. Khôi phục DB từ seed trước mỗi lần đo.
 
 Nguyên tắc: 409 trong PF02 là kết quả đúng; 422 chỉ chấp nhận ở PF03; ghi rõ máy, phiên bản Node/PostgreSQL, đo qua LAN; đo trước/sau tối ưu cùng điều kiện; không cố tạo bản đầu chậm để làm đẹp số liệu.
+
+Kết quả đo ngày 18/09/2026 và cấu hình máy nằm trong `perf/reports/RESULTS.md`. Báo cáo Lighthouse JSON được giữ trong Git; CSV/HTML chi tiết được sinh cục bộ và bị `.gitignore` để tránh làm repository phình lớn.
+
+Lighthouse trang chủ (frontend và backend đang chạy):
+
+```bash
+npx lighthouse http://localhost:5173/index.html --chrome-flags="--headless --no-sandbox" \
+  --only-categories=performance,accessibility,best-practices,seo \
+  --output=json --output=html --output-path=perf/reports/lighthouse-after
+```
