@@ -15,18 +15,40 @@ async function load() {
   setState(list, "loading");
   try {
     const rows = await api.get<Staff[]>("/api/admin/staff");
+    if (rows.length === 0) {
+      setState(list, "empty", "No staff accounts yet");
+      return;
+    }
     list.innerHTML = `<table><thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>${rows
-      .map((s) => `<tr><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.email)}</td><td>${escapeHtml(s.phone)}</td><td>${label(s.role)}</td><td>${s.isActive ? "Active" : "Locked"}</td>
-        <td>${s.id === me.id ? "" : `<button type="button" class="small ${s.isActive ? "danger" : ""}" data-id="${s.id}" data-active="${!s.isActive}">${s.isActive ? "Lock" : "Unlock"}</button>`}</td></tr>`).join("")}</tbody></table>`;
-    list.querySelectorAll<HTMLButtonElement>("button[data-id]").forEach((b) =>
-      b.addEventListener("click", () => run(async () => { await api.patch(`/api/admin/staff/${b.dataset.id}/active`, { isActive: b.dataset.active === "true" }); await load(); }, b)),
-    );
+      .map(
+        (
+          s,
+        ) => `<tr><td>${escapeHtml(s.name)}</td><td>${escapeHtml(s.email)}</td><td>${escapeHtml(s.phone)}</td><td>${label(s.role)}</td><td>${s.isActive ? "Active" : "Locked"}</td>
+        <td>${s.id === me.id ? "" : `<button type="button" class="small ${s.isActive ? "danger" : ""}" data-id="${s.id}" data-active="${!s.isActive}">${s.isActive ? "Lock" : "Unlock"}</button>`}</td></tr>`,
+      )
+      .join("")}</tbody></table>`;
+    list.querySelectorAll<HTMLButtonElement>("button[data-id]").forEach((b) => {
+      b.addEventListener("click", () => {
+        const activating = b.dataset.active === "true";
+        if (!activating && !window.confirm("Lock this account and end all of its active sessions?")) return;
+        void run(async () => {
+          await api.patch(`/api/admin/staff/${b.dataset.id}/active`, { isActive: activating });
+          toast(activating ? "Account unlocked" : "Account locked and active sessions ended", "success");
+          await load();
+        }, b);
+      });
+    });
   } catch (e) {
     setState(list, "error", (e as Error).message);
   }
 }
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  await run(async () => { await api.post("/api/admin/staff", formData(form)); toast("Account created", "success"); form.reset(); await load(); }, form.querySelector("button"));
+  await run(async () => {
+    await api.post("/api/admin/staff", formData(form));
+    toast("Account created", "success");
+    form.reset();
+    await load();
+  }, form.querySelector("button"));
 });
 await load();
