@@ -11,7 +11,11 @@ import type { FoodOrderStatus } from "../../generated/prisma/enums.js";
 const itemSelect = { id: true, name: true, category: true, imageUrl: true, priceVnd: true, isActive: true } as const;
 
 export function listMenu(includeInactive = false) {
-  return prisma.menuItem.findMany({ where: includeInactive ? {} : { isActive: true }, select: itemSelect, orderBy: [{ category: "asc" }, { name: "asc" }] });
+  return prisma.menuItem.findMany({
+    where: includeInactive ? {} : { isActive: true },
+    select: itemSelect,
+    orderBy: [{ category: "asc" }, { name: "asc" }],
+  });
 }
 
 export type PreorderLine = { menuItemId: number; itemNameSnapshot: string; unitPriceVnd: number; quantity: number };
@@ -20,7 +24,10 @@ export type PreorderLine = { menuItemId: number; itemNameSnapshot: string; unitP
  * HÀM DÙNG CHUNG với module 3: chốt tên/giá món từ DB, kiểm tra còn bán và số lượng 1–20.
  * Trả về các dòng để chèn vào food_order_item cùng tổng tiền.
  */
-export async function buildPreorder(tx: Tx, items: { menuItemId: number; quantity: number }[]): Promise<{ lines: PreorderLine[]; totalVnd: number }> {
+export async function buildPreorder(
+  tx: Tx,
+  items: { menuItemId: number; quantity: number }[],
+): Promise<{ lines: PreorderLine[]; totalVnd: number }> {
   if (items.length === 0) return { lines: [], totalVnd: 0 };
   const ids = [...new Set(items.map((i) => i.menuItemId))];
   const menu = await tx.menuItem.findMany({ where: { id: { in: ids } }, select: itemSelect });
@@ -29,7 +36,8 @@ export async function buildPreorder(tx: Tx, items: { menuItemId: number; quantit
   for (const it of items) {
     const m = byId.get(it.menuItemId);
     if (!m || !m.isActive) throw ApiError.unprocessable("MENU_ITEM_UNAVAILABLE", `Món #${it.menuItemId} không còn bán`);
-    if (!Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 20) throw ApiError.unprocessable("INVALID_QUANTITY", "Số lượng mỗi dòng từ 1 đến 20");
+    if (!Number.isInteger(it.quantity) || it.quantity < 1 || it.quantity > 20)
+      throw ApiError.unprocessable("INVALID_QUANTITY", "Số lượng mỗi dòng từ 1 đến 20");
     lines.push({ menuItemId: m.id, itemNameSnapshot: m.name, unitPriceVnd: m.priceVnd, quantity: it.quantity });
   }
   const totalVnd = lines.reduce((s, l) => s + l.unitPriceVnd * l.quantity, 0);
@@ -61,8 +69,11 @@ export async function setOrderStatus(orderId: number, to: FoodOrderStatus) {
   return prisma.$transaction(async (tx) => {
     const o = await tx.foodOrder.findUnique({ where: { id: orderId }, select: { status: true, booking: { select: { status: true } } } });
     if (!o) throw ApiError.notFound("ORDER_NOT_FOUND", "Không tìm thấy đơn món");
-    if (!ORDER_FLOW[o.status].includes(to)) throw ApiError.conflict("INVALID_ORDER_TRANSITION", `Không thể chuyển đơn từ ${o.status} sang ${to}`);
-    if (to === "PREPARING" && o.booking.status !== "IN_USE") throw ApiError.conflict("NOT_CHECKED_IN", "Chỉ chuẩn bị món sau khi khách check-in");
+    if (!ORDER_FLOW[o.status].includes(to))
+      throw ApiError.conflict("INVALID_ORDER_TRANSITION", `Không thể chuyển đơn từ ${o.status} sang ${to}`);
+    if (to !== "CANCELLED" && o.booking.status !== "IN_USE") {
+      throw ApiError.conflict("NOT_IN_USE", "Food orders can only be processed while the booking is in use");
+    }
     return tx.foodOrder.update({ where: { id: orderId }, data: { status: to }, include: { items: true } });
   });
 }
@@ -86,7 +97,11 @@ export type BillingItems = {
 /** HÀM RANH GIỚI cho module 6: tiền món và trạng thái hợp lệ để thanh toán. */
 export async function computeItemsForBilling(tx: Tx, bookingId: number): Promise<BillingItems> {
   const orders = await tx.foodOrder.findMany({ where: { bookingId }, include: { items: true } });
-  const mapped = orders.map((o) => ({ id: o.id, status: o.status, totalVnd: o.items.reduce((s, i) => s + i.unitPriceVnd * i.quantity, 0) }));
+  const mapped = orders.map((o) => ({
+    id: o.id,
+    status: o.status,
+    totalVnd: o.items.reduce((s, i) => s + i.unitPriceVnd * i.quantity, 0),
+  }));
   return {
     itemsTotalVnd: mapped.filter((o) => o.status !== "CANCELLED").reduce((s, o) => s + o.totalVnd, 0),
     unresolvedOrderIds: mapped.filter((o) => o.status === "PENDING" || o.status === "PREPARING").map((o) => o.id),
@@ -105,7 +120,13 @@ export async function resolveOrdersOnEarlyEnd(tx: Tx, bookingId: number) {
 }
 
 // ---- Quản trị menu ----
-export type MenuInput = { name: string; category: "DRINK" | "SNACK" | "FOOD"; imageUrl?: string | null; priceVnd: number; isActive?: boolean };
+export type MenuInput = {
+  name: string;
+  category: "DRINK" | "SNACK" | "FOOD";
+  imageUrl?: string | null;
+  priceVnd: number;
+  isActive?: boolean;
+};
 export function createMenuItem(input: MenuInput) {
   return prisma.menuItem.create({ data: input, select: itemSelect });
 }
