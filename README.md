@@ -4,7 +4,7 @@
 Bản cập nhật tên, phân công và ranh giới làm song song: `output/pdf/CineNest_v1.8_ADDENDUM.pdf` (bản soạn thảo: `docs/CineNest_v1.8_ADDENDUM.md`).
 Phân công chi tiết cho từng thành viên và lịch hoàn thành đúng 7 ngày: `output/pdf/CineNest_PhanCongCongViec_7Ngay.pdf`.
 Bộ nền này đã chạy được từ đầu đến cuối (tìm phòng → đặt → phim/món → check-in → thu tiền → báo cáo) với dữ liệu mẫu,
-có 25 kiểm thử tự động (T01–T18 lõi + danh mục phim) đang xanh. Mỗi người mở module của mình trên khung này, không dựng lại từ đầu.
+có 27 kiểm thử tự động (T01–T18 lõi + danh mục phim + ca biên auth) đang xanh. Mỗi người mở module của mình trên khung này, không dựng lại từ đầu.
 
 ## 1. Cài đặt (ngày 1, mỗi máy ~15 phút)
 
@@ -35,7 +35,7 @@ Kiểm thử tự động (CSDL riêng `moviecafe_test`, không phá dữ liệu
 ```bash
 cp backend/.env.test.example backend/.env.test
 npm run db:test:setup                      # tạo db test + migrate + seed
-npm test                                   # 25 test: T01–T06, T09–T12, T14–T18 + danh mục phim (tìm/phân trang/MOV03)
+npm test                                   # 27 test: T01–T06, T09–T12, T14–T18 + danh mục phim và ca biên auth
 npm run test:e2e                           # Playwright: đăng ký → tìm phòng → booking bốn bước
 ```
 

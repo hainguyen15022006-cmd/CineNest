@@ -16,6 +16,20 @@ describe("Module 1 – tài khoản, phiên, giới hạn thử (T05, T17, T18)"
     expect(me.body.data.role).toBe("CUSTOMER");
   });
 
+  it("không nhận role do trình duyệt gửi khi đăng ký", async () => {
+    const email = `role-${uid()}@test.local`;
+    const response = await request(app).post("/api/auth/register").send({
+      name: "Khach Test",
+      email,
+      phone: "0912345678",
+      password: "Password#1",
+      role: "MANAGER",
+    });
+    expect(response.status).toBe(201);
+    expect(response.body.data.role).toBe("CUSTOMER");
+    expect((await prisma.user.findUniqueOrThrow({ where: { email } })).role).toBe("CUSTOMER");
+  });
+
   it("không đăng nhập -> 401; khách gọi API nội bộ -> 403 (T05)", async () => {
     expect((await request(app).get("/api/me")).status).toBe(401);
     const { agent } = await registerAndLogin(app);
@@ -38,7 +52,9 @@ describe("Module 1 – tài khoản, phiên, giới hạn thử (T05, T17, T18)"
   it("T17: khóa tài khoản nhân viên đang đăng nhập -> yêu cầu kế tiếp 401 ngay", async () => {
     const manager = await loginAs(app, "MANAGER");
     const email = `s-${uid()}@test.local`;
-    const created = await manager.agent.post("/api/admin/staff").send({ name: "NV", email, phone: "0911111111", password: "Password#1", role: "STAFF" });
+    const created = await manager.agent
+      .post("/api/admin/staff")
+      .send({ name: "NV", email, phone: "0911111111", password: "Password#1", role: "STAFF" });
     expect(created.status).toBe(201);
 
     const staff = request.agent(app);
@@ -50,5 +66,13 @@ describe("Module 1 – tài khoản, phiên, giới hạn thử (T05, T17, T18)"
     expect((await staff.get("/api/staff/bookings")).status).toBe(401);
     const sessions = await prisma.session.count({ where: { userId: created.body.data.id } });
     expect(sessions).toBe(0);
+  });
+
+  it("quản lý không thể tự khóa tài khoản đang dùng", async () => {
+    const manager = await loginAs(app, "MANAGER");
+    const response = await manager.agent.patch(`/api/admin/staff/${manager.id}/active`).send({ isActive: false });
+    expect(response.status).toBe(422);
+    expect(response.body.error.code).toBe("CANNOT_LOCK_SELF");
+    expect((await manager.agent.get("/api/me")).status).toBe(200);
   });
 });
