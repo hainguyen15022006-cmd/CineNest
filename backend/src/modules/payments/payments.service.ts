@@ -5,11 +5,11 @@
  * hoặc để UNPAID. Mỗi booking một Payment. Module này CHỈ gọi transitionBooking() của module 3 và
  * computeItemsForBilling() của module 5, không tự sửa status hay tính lại tiền món.
  */
-import { prisma, type Tx } from "../../core/prisma.js";
 import { ApiError } from "../../core/http.js";
 import { transitionBooking, type Actor } from "../bookings/bookings.service.js";
 import { computeItemsForBilling, resolveOrdersOnEarlyEnd } from "../menu/menu.service.js";
 import type { PaymentMethod } from "../../generated/prisma/enums.js";
+import { prisma, type Tx } from "../../core/prisma.js";
 
 export type Invoice = {
   bookingId: number;
@@ -30,16 +30,23 @@ export type Invoice = {
   blockers: string[];
 };
 
-/** Hóa đơn tính từ dữ liệu đã lưu – máy chủ là nguồn sự thật (T09). */
+/**
+ * Computes the invoice for a given booking.
+ * Acts as the Source of Truth for billing and collection readiness.
+ */
 export async function computeInvoice(tx: Tx, bookingId: number): Promise<Invoice> {
   const b = await tx.booking.findUnique({
     where: { id: bookingId },
     select: { id: true, code: true, status: true, paymentStatus: true, roomTotal: true, endedEarlyReason: true },
   });
-  if (!b) throw ApiError.notFound("BOOKING_NOT_FOUND", "Không tìm thấy booking");
+  if (!b) throw ApiError.notFound("BOOKING_NOT_FOUND", "Booking not found");
+
   const items = await computeItemsForBilling(tx, bookingId);
   const adj = await tx.adjustment.findFirst({ where: { bookingId, isCurrent: true } });
+
   const originalTotal = b.roomTotal + items.itemsTotalVnd;
+
+  /** Chỉ APPROVED mới được trừ (trang 7) - Capped at originalTotal */
   const approved = adj && adj.status === "APPROVED" ? Math.min(adj.amountVnd, originalTotal) : 0;
 
   const blockers: string[] = [];

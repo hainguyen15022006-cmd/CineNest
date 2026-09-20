@@ -3,10 +3,11 @@ import { createApp } from "../src/app.js";
 import { closeDb, prisma } from "../src/core/prisma.js";
 import { loginAs, createTestRoom, key, uid } from "./helpers.js";
 import { computeWindow, addMinutes } from "../src/core/time.js";
+import { getReports } from "../src/modules/payments/reports.service.js";
 
 const app = createApp();
 
-/** Tạo thẳng một booking IN_USE (đang dùng phòng) để test luồng phục vụ – không đi qua quy tắc đặt trước */
+/** Create an IN_USE booking directly to test service workflows */
 async function inUseBooking(roomId: number, price = 100_000) {
   const startAt = addMinutes(new Date(), -30);
   const win = computeWindow(startAt, 120);
@@ -76,7 +77,6 @@ describe("Module 5 + 6 – món, hóa đơn, thu tiền, ngoại lệ (T11, T12,
     expect(ended.status).toBe(200);
     expect(ended.body.data.booking.status).toBe("COMPLETED");
     expect((await prisma.foodOrder.findUnique({ where: { id: pending.id } }))?.status).toBe("CANCELLED");
-    // PENDING không tính; PREPARING + SERVED tính tiền
     expect(ended.body.data.invoice.itemsTotalVnd).toBe(items[1]!.priceVnd + items[2]!.priceVnd);
     const original = 200_000 + items[1]!.priceVnd + items[2]!.priceVnd;
 
@@ -118,5 +118,11 @@ describe("Module 5 + 6 – món, hóa đơn, thu tiền, ngoại lệ (T11, T12,
     expect(ids).toContain(b2.id);
     const rev = await manager.agent.get("/api/admin/reports/revenue");
     expect(rev.body.data.details.map((d: { code: string }) => d.code)).not.toContain(b1.code);
+
+    // Call getReports directly to print raw JSON report output to Terminal
+    const reportData = await getReports();
+    console.error("\n== DB RECONCILED REPORT DATA ==");
+    console.error(JSON.stringify(reportData, null, 2));
+    console.error("====\n");
   });
 });
