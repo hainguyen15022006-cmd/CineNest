@@ -96,6 +96,19 @@ $<HTMLFormElement>("#confirm-form").addEventListener("submit", async (e) => {
       renderReview();
       toast("The price has changed. The latest prices are now displayed. Please review and confirm again.", "error");
       idemKey = newIdempotencyKey();
+    } else if (err instanceof ApiError && err.code === "MENU_ITEM_UNAVAILABLE") {
+      menuPicker = await mountMenuPicker($("#menu"), menuPicker?.items ?? []);
+      renderReview();
+      toast("An item is no longer available and was removed. Please review your order.", "error");
+      idemKey = newIdempotencyKey();
+    } else if (err instanceof ApiError && err.code === "MOVIE_UNAVAILABLE") {
+      movie = null;
+      sel.movieId = null;
+      pickerMounted = false;
+      $("#movies").innerHTML = "";
+      await show(2);
+      toast("The selected movie is no longer available. Please choose another movie or choose at the café.", "error");
+      idemKey = newIdempotencyKey();
     } else if (err instanceof Error && err.message !== "redirecting") {
       toast(err.message, "error"); // lỗi mạng: giữ idemKey để thử lại nhận đúng kết quả cũ
     }

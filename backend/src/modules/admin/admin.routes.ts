@@ -12,7 +12,7 @@ import { z } from "zod";
 import { parse } from "../../core/validate.js";
 import { ok } from "../../core/http.js";
 import { requireManager } from "../../core/auth.js";
-import { vnToDate, addMinutes, todayVn } from "../../core/time.js";
+import { vnToDate, addMinutes, todayVn, dateToVn } from "../../core/time.js";
 import * as auth from "../auth/auth.service.js";
 import { adminRoomsRouter } from "../rooms/rooms.routes.js";
 import { adminMoviesRouter } from "../movies/movies.routes.js";
@@ -65,10 +65,13 @@ adminRouter.post("/adjustments/:id/reject", async (req, res) => {
 const rangeSchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+}).refine((value) => !value.from || !value.to || value.from <= value.to, {
+  message: "The start date must not be after the end date",
+  path: ["from"],
 });
 function range(q: { from?: string; to?: string }) {
   const to = q.to ?? todayVn();
-  const from = q.from ?? addMinutes(vnToDate(to, "00:00"), -29 * 24 * 60).toISOString().slice(0, 10);
+  const from = q.from ?? dateToVn(addMinutes(vnToDate(to, "00:00"), -29 * 24 * 60)).date;
   return { from: vnToDate(from, "00:00"), to: addMinutes(vnToDate(to, "00:00"), 24 * 60) };
 }
 adminRouter.get("/reports/bookings", async (req, res) => ok(res, await reports.bookingsByDay(range(parse(rangeSchema, req.query)))));

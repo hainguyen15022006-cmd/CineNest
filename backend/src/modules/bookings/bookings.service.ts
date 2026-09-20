@@ -283,11 +283,12 @@ export async function getBookingFor(actor: Actor, idOrCode: string) {
 /** Hủy: khách chỉ khi CONFIRMED và còn >= 2 giờ (T06); nhân viên hủy CONFIRMED bất kỳ lúc nào, bắt buộc lý do */
 export async function cancelBooking(actor: Actor, bookingId: number, reason: string | null) {
   return prisma.$transaction(async (tx) => {
-    const b = await tx.booking.findUnique({ where: { id: bookingId }, select: { customerId: true, startAt: true, status: true } });
-    if (!b || (actor.role === "CUSTOMER" && b.customerId !== actor.id)) throw ApiError.notFound("BOOKING_NOT_FOUND", "Không tìm thấy booking");
+    const [b] = await tx.$queryRaw<{ customer_id: number | null; start_at: Date; status: BookingStatus }[]>`
+      SELECT "customer_id", "start_at", "status" FROM "booking" WHERE "id" = ${bookingId} FOR UPDATE`;
+    if (!b || (actor.role === "CUSTOMER" && b.customer_id !== actor.id)) throw ApiError.notFound("BOOKING_NOT_FOUND", "Không tìm thấy booking");
     if (b.status !== "CONFIRMED") throw ApiError.conflict("INVALID_TRANSITION", "Chỉ hủy được booking đã xác nhận");
     if (actor.role === "CUSTOMER") {
-      const msLeft = b.startAt.getTime() - Date.now();
+      const msLeft = b.start_at.getTime() - Date.now();
       if (msLeft < CANCEL_BEFORE_MINUTES * 60_000) {
         throw ApiError.unprocessable("CANCEL_TOO_LATE", "Chỉ tự hủy được khi còn ít nhất 2 giờ trước giờ bắt đầu");
       }
@@ -332,20 +333,22 @@ export function listOverdue(now = new Date()) {
 
 export async function checkIn(actor: Actor, bookingId: number) {
   return prisma.$transaction(async (tx) => {
-    const b = await tx.booking.findUnique({ where: { id: bookingId }, select: { startAt: true, endAt: true, status: true } });
+    const [b] = await tx.$queryRaw<{ start_at: Date; end_at: Date }[]>`
+      SELECT "start_at", "end_at" FROM "booking" WHERE "id" = ${bookingId} FOR UPDATE`;
     if (!b) throw ApiError.notFound("BOOKING_NOT_FOUND", "Không tìm thấy booking");
     const now = new Date();
-    if (b.startAt > now) throw ApiError.conflict("TOO_EARLY_FOR_CHECK_IN", "Chỉ check-in từ giờ bắt đầu của booking");
-    if (b.endAt <= now) throw ApiError.conflict("PAST_END", "Đã qua giờ kết thúc; dùng 'sử dụng không check-in' hoặc NO_SHOW (EX06)");
+    if (b.start_at > now) throw ApiError.conflict("TOO_EARLY_FOR_CHECK_IN", "Chỉ check-in từ giờ bắt đầu của booking");
+    if (b.end_at <= now) throw ApiError.conflict("PAST_END", "Đã qua giờ kết thúc; dùng 'sử dụng không check-in' hoặc NO_SHOW (EX06)");
     return transitionBooking(tx, bookingId, "IN_USE", actor, "check-in");
   });
 }
 
 export async function markNoShow(actor: Actor, bookingId: number, reason: string | null) {
   return prisma.$transaction(async (tx) => {
-    const b = await tx.booking.findUnique({ where: { id: bookingId }, select: { startAt: true } });
+    const [b] = await tx.$queryRaw<{ start_at: Date }[]>`
+      SELECT "start_at" FROM "booking" WHERE "id" = ${bookingId} FOR UPDATE`;
     if (!b) throw ApiError.notFound("BOOKING_NOT_FOUND", "Không tìm thấy booking");
-    if (Date.now() - b.startAt.getTime() < LATE_WARNING_MINUTES * 60_000) {
+    if (Date.now() - b.start_at.getTime() < LATE_WARNING_MINUTES * 60_000) {
       throw ApiError.conflict("TOO_EARLY_FOR_NO_SHOW", `Chỉ đánh dấu NO_SHOW sau ${LATE_WARNING_MINUTES} phút kể từ giờ bắt đầu`);
     }
     await tx.foodOrder.updateMany({ where: { bookingId, status: "PENDING" }, data: { status: "CANCELLED" } });
@@ -356,9 +359,10 @@ export async function markNoShow(actor: Actor, bookingId: number, reason: string
 /** EX06: khách thực tế đã dùng phòng nhưng nhân viên quên check-in, đã qua giờ kết thúc */
 export async function markUsedWithoutCheckIn(actor: Actor, bookingId: number, note: string) {
   return prisma.$transaction(async (tx) => {
-    const b = await tx.booking.findUnique({ where: { id: bookingId }, select: { endAt: true } });
+    const [b] = await tx.$queryRaw<{ end_at: Date }[]>`
+      SELECT "end_at" FROM "booking" WHERE "id" = ${bookingId} FOR UPDATE`;
     if (!b) throw ApiError.notFound("BOOKING_NOT_FOUND", "Không tìm thấy booking");
-    if (b.endAt > new Date()) throw ApiError.conflict("NOT_ENDED", "Chưa qua giờ kết thúc; hãy check-in bình thường");
+    if (b.end_at > new Date()) throw ApiError.conflict("NOT_ENDED", "Chưa qua giờ kết thúc; hãy check-in bình thường");
     return transitionBooking(tx, bookingId, "COMPLETED", actor, `Sử dụng không check-in: ${note}`);
   });
 }

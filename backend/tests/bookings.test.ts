@@ -337,6 +337,25 @@ describe("Module 3 – booking: quy tắc, chống trùng hai lớp, chống g�
     expect(overCapacity.body.error.code).toBe("OVER_CAPACITY");
   });
 
+  it("BR06: closing a room and creating a booking cannot both succeed concurrently", async () => {
+    const room = await createTestRoom(6);
+    const customer = await registerAndLogin(app);
+    const manager = await loginAs(app, "MANAGER");
+
+    const [created, closed] = await Promise.all([
+      customer.agent.post("/api/bookings").set("Idempotency-Key", key()).send(bookingPayload(room.id, { guests: 6 })),
+      manager.agent.patch(`/api/admin/rooms/${room.id}`).send({ isActive: false }),
+    ]);
+
+    expect(
+      (created.status === 201 && closed.status === 422)
+      || (created.status === 422 && closed.status === 200),
+    ).toBe(true);
+    const saved = await prisma.booking.count({ where: { roomId: room.id, status: "CONFIRMED" } });
+    const currentRoom = await prisma.room.findUniqueOrThrow({ where: { id: room.id } });
+    expect(saved === 1 && currentRoom.isActive).toBe(created.status === 201);
+  });
+
   it("Day 4: a booking-code collision retries the transaction with a new code", async () => {
     const firstRoom = await createTestRoom();
     const secondRoom = await createTestRoom();

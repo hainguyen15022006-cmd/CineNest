@@ -25,7 +25,11 @@
       </form>
     </section>
     <section class="card"><h2>Collect payment</h2>
-      <form id="pay-form" class="row"><div class="field"><label for="method">Payment method</label><select id="method" name="method"><option value="CASH">Cash</option><option value="TRANSFER">Bank transfer</option></select></div><div class="field"><button type="submit" id="btn-pay">Record payment</button></div></form>
+      <form id="pay-form" class="row">
+        <div class="field"><label for="method">Payment method</label><select id="method" name="method"><option value="CASH">Cash</option><option value="TRANSFER">Bank transfer</option></select></div>
+        <label id="collect-full-option" class="field hidden"><span>Pending adjustment</span><span><input id="collect-full" type="checkbox"> The customer agrees to pay the full original total and withdraw the pending request.</span></label>
+        <div class="field"><button type="submit" id="btn-pay">Record payment</button></div>
+      </form>
     </section>
   </main>
   <script type="module" src="./checkout.ts"></script>

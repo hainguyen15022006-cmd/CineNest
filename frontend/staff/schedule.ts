@@ -27,7 +27,14 @@ async function load() {
     const [rooms, bookings] = await Promise.all([api.get<Room[]>("/api/rooms"), api.get<Booking[]>(`/api/staff/bookings?date=${encodeURIComponent(dateInput.value)}`)]);
     const base = dayStartUtc(dateInput.value);
     const head = Array.from({ length: 28 }, (_, i) => `<div class="cell head">${new Date(base + i * SLOT_MS).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "Asia/Ho_Chi_Minh" })}</div>`).join("");
-    const rows = rooms.map((r) => {
+    // The public room list contains active rooms only. Preserve schedule rows for
+    // rooms that were deactivated after bookings had already been created.
+    const scheduleRooms: Array<Pick<Room, "id" | "name">> = rooms.map(({ id, name }) => ({ id, name }));
+    for (const booking of bookings) {
+      if (!scheduleRooms.some((room) => room.id === booking.room.id)) scheduleRooms.push(booking.room);
+    }
+    scheduleRooms.sort((a, b) => a.name.localeCompare(b.name, "en", { numeric: true }));
+    const rows = scheduleRooms.map((r) => {
       const cells: string[] = [];
       for (let i = 0; i < 28; i++) {
         const t = base + i * SLOT_MS;

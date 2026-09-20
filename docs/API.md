@@ -28,7 +28,7 @@ Thời gian: gửi lên `date` (YYYY-MM-DD) + `startTime` (HH:mm) theo giờ Vi�
 | `GET /staff/preparation?date` · `PATCH /staff/bookings/:id/preparation` `{status,expectedVersion}` | STAFF | Thành Lê | 409 `MOVIE_CHANGED` khi version lệch |
 | `GET /staff/orders?status` · `POST /staff/bookings/:id/orders` `{items[]}` · `PATCH /staff/orders/:id/status` `{status}` | STAFF | Sơn | chỉ thêm món khi IN_USE và UNPAID |
 | `GET /staff/bookings/:id/invoice` | STAFF | Công Thành | Tổng gốc, điều chỉnh (chỉ APPROVED), Số phải trả, `canCollect`, `blockers[]` |
-| `POST /staff/bookings/:id/checkout` `{method}` | STAFF | Công Thành | 409 `CANNOT_COLLECT` (details.blockers), 409 `ALREADY_PAID` |
+| `POST /staff/bookings/:id/checkout` `{method,collectFullAmount?}` | STAFF | Công Thành | `collectFullAmount=true` thu đủ Tổng gốc và rút đề nghị đang chờ; 409 `CANNOT_COLLECT` (details.blockers), 409 `ALREADY_PAID` |
 | `POST /staff/bookings/:id/end-early` `{reason}` | STAFF | Công Thành | EX01 + EX02 |
 | `POST /staff/bookings/:id/adjustments` `{kind,amountVnd?,reason}` | STAFF | Công Thành | chờ duyệt; WAIVE tự lấy Tổng gốc |
 | `GET /admin/staff` · `POST /admin/staff` · `PATCH /admin/staff/:id/active` `{isActive}` | MANAGER | Dương | khóa ⇒ xóa mọi phiên |

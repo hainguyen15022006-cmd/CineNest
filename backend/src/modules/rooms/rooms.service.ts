@@ -96,24 +96,30 @@ export function createRoom(input: RoomInput) {
 }
 
 export async function updateRoom(id: number, input: Partial<RoomInput>) {
-  if (input.isActive === false) {
-    // BR06: không đóng phòng khi còn booking xác nhận hoặc đang sử dụng
-    const active = await prisma.booking.count({ where: { roomId: id, status: { in: ["CONFIRMED", "IN_USE"] } } });
-    if (active > 0) throw ApiError.unprocessable("ROOM_HAS_BOOKINGS", "Phòng còn booking đang hiệu lực, hãy xử lý trước khi đóng");
-  }
-  return prisma.room.update({
-    where: { id },
-    data: {
-      ...(input.name !== undefined && { name: input.name }),
-      ...(input.capacity !== undefined && { capacity: input.capacity }),
-      ...(input.description !== undefined && { description: input.description }),
-      ...(input.amenities !== undefined && { amenities: input.amenities }),
-      ...(input.hourlyPriceVnd !== undefined && { hourlyPriceVnd: input.hourlyPriceVnd }), // BR08: giá mới chỉ áp dụng cho booking tạo sau
-      ...(input.isActive !== undefined && { isActive: input.isActive }),
-      ...(input.images !== undefined && {
-        images: { deleteMany: {}, create: input.images.map((url, i) => ({ url, sortOrder: i })) },
-      }),
-    },
-    select: roomSelect,
+  return prisma.$transaction(async (tx) => {
+    // Cùng khóa với createBooking: không thể đóng phòng sau bước kiểm tra nhưng trước khi booking được tạo.
+    const [room] = await tx.$queryRaw<{ id: number }[]>`
+      SELECT "id" FROM "room" WHERE "id" = ${id} FOR UPDATE`;
+    if (!room) throw ApiError.notFound("ROOM_NOT_FOUND", "Không tìm thấy phòng");
+    if (input.isActive === false) {
+      // BR06: không đóng phòng khi còn booking xác nhận hoặc đang sử dụng
+      const active = await tx.booking.count({ where: { roomId: id, status: { in: ["CONFIRMED", "IN_USE"] } } });
+      if (active > 0) throw ApiError.unprocessable("ROOM_HAS_BOOKINGS", "Phòng còn booking đang hiệu lực, hãy xử lý trước khi đóng");
+    }
+    return tx.room.update({
+      where: { id },
+      data: {
+        ...(input.name !== undefined && { name: input.name }),
+        ...(input.capacity !== undefined && { capacity: input.capacity }),
+        ...(input.description !== undefined && { description: input.description }),
+        ...(input.amenities !== undefined && { amenities: input.amenities }),
+        ...(input.hourlyPriceVnd !== undefined && { hourlyPriceVnd: input.hourlyPriceVnd }), // BR08: giá mới chỉ áp dụng cho booking tạo sau
+        ...(input.isActive !== undefined && { isActive: input.isActive }),
+        ...(input.images !== undefined && {
+          images: { deleteMany: {}, create: input.images.map((url, i) => ({ url, sortOrder: i })) },
+        }),
+      },
+      select: roomSelect,
+    });
   });
 }

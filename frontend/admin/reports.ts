@@ -37,7 +37,9 @@ async function load() {
       escapeHtml(r.ended_early_reason ?? ""),
     ]));
   } catch (e) {
-    setState($("#bookings"), "error", (e as Error).message);
+    for (const id of ["bookings", "revenue", "hours", "unpaid"]) {
+      setState($(`#${id}`), "error", (e as Error).message);
+    }
   }
 }
 $<HTMLFormElement>("#range-form").addEventListener("submit", (e) => { e.preventDefault(); void load(); });

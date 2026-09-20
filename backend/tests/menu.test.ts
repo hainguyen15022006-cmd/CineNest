@@ -4,7 +4,7 @@ import { createApp } from "../src/app.js";
 import { closeDb, prisma } from "../src/core/prisma.js";
 import { addMinutes, computeWindow } from "../src/core/time.js";
 import { buildPreorder } from "../src/modules/menu/menu.service.js";
-import { createTestRoom, loginAs, uid } from "./helpers.js";
+import { createTestRoom, key, loginAs, uid } from "./helpers.js";
 
 const app = createApp();
 
@@ -305,6 +305,47 @@ describe("Module 5 - menu and pre-orders", () => {
 
     expect(rejectedServe.status).toBe(409);
     expect(rejectedServe.body.error.code).toBe("NOT_IN_USE");
+  });
+
+  it("serializes adding food against checkout so a paid booking cannot gain a new order", async () => {
+    const staff = await loginAs(app, "STAFF");
+    const booking = await createMenuTestBooking("IN_USE");
+    const item = await prisma.menuItem.create({
+      data: { name: `Race-${uid()}`, category: "SNACK", priceVnd: 35_000, isActive: true },
+    });
+
+    const [added, paid] = await Promise.all([
+      staff.agent.post(`/api/staff/bookings/${booking.id}/orders`).send({ items: [{ menuItemId: item.id, quantity: 1 }] }),
+      staff.agent.post(`/api/staff/bookings/${booking.id}/checkout`).set("Idempotency-Key", key()).send({ method: "CASH" }),
+    ]);
+
+    const orderCount = await prisma.foodOrder.count({ where: { bookingId: booking.id } });
+    const paymentCount = await prisma.payment.count({ where: { bookingId: booking.id } });
+    expect(orderCount + paymentCount).toBe(1);
+    expect([added.status, paid.status].sort()).toEqual([201, 409]);
+  });
+
+  it("lets staff finish recorded food after marking a genuinely used booking without check-in", async () => {
+    const staff = await loginAs(app, "STAFF");
+    const booking = await createMenuTestBooking("CONFIRMED");
+    const item = await prisma.menuItem.create({
+      data: { name: `Forgot-check-in-${uid()}`, category: "DRINK", priceVnd: 30_000, isActive: true },
+    });
+    const order = await prisma.foodOrder.create({
+      data: {
+        bookingId: booking.id,
+        items: { create: { menuItemId: item.id, itemNameSnapshot: item.name, unitPriceVnd: item.priceVnd, quantity: 1 } },
+      },
+    });
+    const now = new Date();
+    await prisma.booking.update({
+      where: { id: booking.id },
+      data: { startAt: addMinutes(now, -180), endAt: addMinutes(now, -60), occupiedUntil: addMinutes(now, -30) },
+    });
+
+    expect((await staff.agent.post(`/api/staff/bookings/${booking.id}/mark-used`).send({ note: "Customer used the room" })).status).toBe(200);
+    expect((await staff.agent.patch(`/api/staff/orders/${order.id}/status`).send({ status: "PREPARING" })).status).toBe(200);
+    expect((await staff.agent.patch(`/api/staff/orders/${order.id}/status`).send({ status: "SERVED" })).status).toBe(200);
   });
 
   it("allows only managers to create, update, and deactivate menu items", async () => {

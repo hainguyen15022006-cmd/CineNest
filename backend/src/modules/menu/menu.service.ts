@@ -29,7 +29,12 @@ export async function buildPreorder(
   items: { menuItemId: number; quantity: number }[],
 ): Promise<{ lines: PreorderLine[]; totalVnd: number }> {
   if (items.length === 0) return { lines: [], totalVnd: 0 };
-  const ids = [...new Set(items.map((i) => i.menuItemId))];
+  const ids = [...new Set(items.map((i) => i.menuItemId))].sort((a, b) => a - b);
+  // Giữ danh mục ổn định đến lúc transaction tạo booking/order hoàn tất.
+  // Khóa theo thứ tự id cố định để tránh deadlock khi nhiều đơn chọn cùng món.
+  for (const id of ids) {
+    await tx.$queryRaw`SELECT "id" FROM "menu_item" WHERE "id" = ${id} FOR SHARE`;
+  }
   const menu = await tx.menuItem.findMany({ where: { id: { in: ids } }, select: itemSelect });
   const byId = new Map(menu.map((m) => [m.id, m]));
   const lines: PreorderLine[] = [];
@@ -47,10 +52,11 @@ export async function buildPreorder(
 /** Nhân viên thêm món cho booking IN_USE (trang 7) */
 export async function addOrder(bookingId: number, items: { menuItemId: number; quantity: number }[], staffId: number) {
   return prisma.$transaction(async (tx) => {
-    const b = await tx.booking.findUnique({ where: { id: bookingId }, select: { status: true, paymentStatus: true } });
+    const [b] = await tx.$queryRaw<{ status: string; payment_status: string }[]>`
+      SELECT "status", "payment_status" FROM "booking" WHERE "id" = ${bookingId} FOR UPDATE`;
     if (!b) throw ApiError.notFound("BOOKING_NOT_FOUND", "Không tìm thấy booking");
     if (b.status !== "IN_USE") throw ApiError.conflict("NOT_IN_USE", "Chỉ thêm món khi khách đang sử dụng phòng");
-    if (b.paymentStatus !== "UNPAID") throw ApiError.conflict("ALREADY_PAID", "Không thêm món sau khi đã thanh toán");
+    if (b.payment_status !== "UNPAID") throw ApiError.conflict("ALREADY_PAID", "Không thêm món sau khi đã thanh toán");
     const { lines } = await buildPreorder(tx, items);
     if (lines.length === 0) throw ApiError.unprocessable("EMPTY_ORDER", "Đơn món trống");
     return tx.foodOrder.create({ data: { bookingId, createdById: staffId, items: { create: lines } }, include: { items: true } });
@@ -67,11 +73,38 @@ const ORDER_FLOW: Record<FoodOrderStatus, FoodOrderStatus[]> = {
 /** Chuyển trạng thái đơn món. Chỉ bắt đầu chuẩn bị sau check-in (trang 7). */
 export async function setOrderStatus(orderId: number, to: FoodOrderStatus) {
   return prisma.$transaction(async (tx) => {
-    const o = await tx.foodOrder.findUnique({ where: { id: orderId }, select: { status: true, booking: { select: { status: true } } } });
+    const reference = await tx.foodOrder.findUnique({ where: { id: orderId }, select: { bookingId: true } });
+    if (!reference) throw ApiError.notFound("ORDER_NOT_FOUND", "Không tìm thấy đơn món");
+    // Cùng thứ tự với checkout/end-early: booking trước, order sau.
+    await tx.$queryRaw`SELECT "id" FROM "booking" WHERE "id" = ${reference.bookingId} FOR UPDATE`;
+    await tx.$queryRaw`SELECT "id" FROM "food_order" WHERE "id" = ${orderId} FOR UPDATE`;
+    const o = await tx.foodOrder.findUnique({
+      where: { id: orderId },
+      select: {
+        status: true,
+        booking: {
+          select: {
+            status: true,
+            paymentStatus: true,
+            endedEarlyReason: true,
+            history: {
+              where: { field: "status", newValue: "COMPLETED" },
+              orderBy: { changedAt: "desc" },
+              take: 1,
+              select: { reason: true },
+            },
+          },
+        },
+      },
+    });
     if (!o) throw ApiError.notFound("ORDER_NOT_FOUND", "Không tìm thấy đơn món");
     if (!ORDER_FLOW[o.status].includes(to))
       throw ApiError.conflict("INVALID_ORDER_TRANSITION", `Không thể chuyển đơn từ ${o.status} sang ${to}`);
-    if (to !== "CANCELLED" && o.booking.status !== "IN_USE") {
+    const canProcessAfterForgottenCheckIn = o.booking.status === "COMPLETED"
+      && o.booking.paymentStatus === "UNPAID"
+      && !o.booking.endedEarlyReason
+      && o.booking.history[0]?.reason?.startsWith("Sử dụng không check-in:");
+    if (to !== "CANCELLED" && o.booking.status !== "IN_USE" && !canProcessAfterForgottenCheckIn) {
       throw ApiError.conflict("NOT_IN_USE", "Food orders can only be processed while the booking is in use");
     }
     return tx.foodOrder.update({ where: { id: orderId }, data: { status: to }, include: { items: true } });

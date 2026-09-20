@@ -3,7 +3,6 @@ import { createApp } from "../src/app.js";
 import { closeDb, prisma } from "../src/core/prisma.js";
 import { loginAs, createTestRoom, key, uid } from "./helpers.js";
 import { computeWindow, addMinutes } from "../src/core/time.js";
-import { getReports } from "../src/modules/payments/reports.service.js";
 
 const app = createApp();
 
@@ -42,6 +41,10 @@ describe("Module 5 + 6 – món, hóa đơn, thu tiền, ngoại lệ (T11, T12,
     const inv = await staff.agent.get(`/api/staff/bookings/${b.id}/invoice`);
     expect(inv.body.data.amountDueVnd).toBe(200_000 + item!.priceVnd * 2);
     expect(inv.body.data.canCollect).toBe(true);
+
+    const invalidMethod = await staff.agent.post(`/api/staff/bookings/${b.id}/checkout`).set("Idempotency-Key", key()).send({ method: "CARD" });
+    expect(invalidMethod.status).toBe(422);
+    expect(await prisma.payment.count({ where: { bookingId: b.id } })).toBe(0);
 
     const k = key();
     const paid = await staff.agent.post(`/api/staff/bookings/${b.id}/checkout`).set("Idempotency-Key", k).send({ method: "CASH" });
@@ -96,6 +99,29 @@ describe("Module 5 + 6 – món, hóa đơn, thu tiền, ngoại lệ (T11, T12,
     expect(paid.body.data.payment.amountVnd).toBe(original - 50_000);
   });
 
+  it("T15 alternative: pending adjustment requires an explicit choice before collecting the full original total", async () => {
+    const staff = await loginAs(app, "STAFF");
+    const b = await inUseBooking((await createTestRoom()).id);
+    const proposal = await staff.agent
+      .post(`/api/staff/bookings/${b.id}/adjustments`)
+      .send({ kind: "REDUCE", amountVnd: 25_000, reason: "Minor equipment issue" });
+    expect(proposal.status).toBe(201);
+
+    const blocked = await staff.agent
+      .post(`/api/staff/bookings/${b.id}/checkout`)
+      .set("Idempotency-Key", key())
+      .send({ method: "CASH" });
+    expect(blocked.status).toBe(409);
+
+    const paid = await staff.agent
+      .post(`/api/staff/bookings/${b.id}/checkout`)
+      .set("Idempotency-Key", key())
+      .send({ method: "CASH", collectFullAmount: true });
+    expect(paid.status).toBe(201);
+    expect(paid.body.data.payment.amountVnd).toBe(200_000);
+    expect((await prisma.adjustment.findUnique({ where: { id: proposal.body.data.id } }))?.isCurrent).toBe(false);
+  });
+
   it("T16 + T12: khách bỏ về -> COMPLETED + UNPAID; miễn toàn bộ -> WAIVED; cả hai không vào doanh thu, có trong 'chưa thu và miễn'", async () => {
     const staff = await loginAs(app, "STAFF");
     const manager = await loginAs(app, "MANAGER");
@@ -119,10 +145,7 @@ describe("Module 5 + 6 – món, hóa đơn, thu tiền, ngoại lệ (T11, T12,
     const rev = await manager.agent.get("/api/admin/reports/revenue");
     expect(rev.body.data.details.map((d: { code: string }) => d.code)).not.toContain(b1.code);
 
-    // Call getReports directly to print raw JSON report output to Terminal
-    const reportData = await getReports();
-    console.error("\n== DB RECONCILED REPORT DATA ==");
-    console.error(JSON.stringify(reportData, null, 2));
-    console.error("====\n");
+    const reversed = await manager.agent.get("/api/admin/reports/bookings?from=2026-09-20&to=2026-09-19");
+    expect(reversed.status).toBe(422);
   });
 });

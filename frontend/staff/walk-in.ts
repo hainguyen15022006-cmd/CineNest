@@ -11,7 +11,7 @@ await mountLayout("Walk-in booking");
 await requireRole("STAFF");
 
 const form = $<HTMLFormElement>("#walkin-form");
-const rooms = await api.get<Room[]>("/api/rooms");
+let rooms = await api.get<Room[]>("/api/rooms");
 const roomSelect = $<HTMLSelectElement>("#roomId");
 const guestInput = $<HTMLInputElement>("#guests");
 const date = $<HTMLInputElement>("#date");
@@ -19,12 +19,13 @@ const duration = $<HTMLSelectElement>("#duration");
 const startTime = $<HTMLSelectElement>("#startTime");
 const createButton = $<HTMLButtonElement>("#btn-create");
 
-roomSelect.innerHTML = rooms
-  .map(
-    (room) =>
-      `<option value="${room.id}">${escapeHtml(room.name)} (up to ${room.capacity})</option>`,
-  )
-  .join("");
+function renderRooms(selectedId?: number) {
+  roomSelect.innerHTML = rooms
+    .map((room) => `<option value="${room.id}">${escapeHtml(room.name)} (up to ${room.capacity})</option>`)
+    .join("");
+  if (selectedId && rooms.some((room) => room.id === selectedId)) roomSelect.value = String(selectedId);
+}
+renderRooms();
 date.value = todayVn();
 date.min = todayVn();
 
@@ -76,7 +77,7 @@ $("#btn-pick-movie").addEventListener("click", () => {
   });
 });
 
-const menuPicker = await mountMenuPicker($("#menu-picker"));
+let menuPicker = await mountMenuPicker($("#menu-picker"));
 
 function updateEstimate() {
   const room = selectedRoom();
@@ -141,6 +142,20 @@ form.addEventListener("submit", async (event) => {
         : " No later slot is available today.";
       toast(`${error.message}${suffix}`, "error");
       key = newIdempotencyKey();
+    } else if (error instanceof ApiError && ["PRICE_CHANGED", "MENU_ITEM_UNAVAILABLE", "ROOM_INACTIVE"].includes(error.code)) {
+      const selectedId = Number(roomSelect.value);
+      const selectedItems = menuPicker.items;
+      rooms = await api.get<Room[]>("/api/rooms");
+      renderRooms(selectedId);
+      menuPicker = await mountMenuPicker($("#menu-picker"), selectedItems);
+      updateCapacity();
+      updateEstimate();
+      key = newIdempotencyKey();
+      toast("Room or menu details changed. The latest values are displayed; please review and confirm again.", "error");
+    } else if (error instanceof ApiError && error.code === "MOVIE_UNAVAILABLE") {
+      resetMoviePicker();
+      key = newIdempotencyKey();
+      toast("The selected movie is no longer available. Please choose another movie or choose at the café.", "error");
     } else if (
       error instanceof ApiError &&
       error.code === "IDEMPOTENCY_KEY_REUSED"

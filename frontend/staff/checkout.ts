@@ -27,9 +27,17 @@ async function load() {
       </tbody></table>
       ${inv.blockers.length ? `<ul class="error-text">${inv.blockers.map((b) => `<li>${escapeHtml(BLOCKER[b] ?? b)}</li>`).join("")}</ul>` : `<p style="color:var(--ok)">Payment can be collected.</p>`}
       <p><a href="./booking-detail.html?id=${inv.bookingId}">← Booking details</a> · <a href="./orders.html?bookingId=${inv.bookingId}">Food orders</a></p>`;
-    $<HTMLButtonElement>("#btn-pay").disabled = !inv.canCollect;
+    const payButton = $<HTMLButtonElement>("#btn-pay");
+    const collectFull = $<HTMLInputElement>("#collect-full");
+    const collectFullOption = $("#collect-full-option");
+    collectFull.checked = false;
+    collectFullOption.classList.toggle("hidden", !inv.canCollectOriginalTotal);
+    payButton.disabled = !inv.canCollect;
+    collectFull.onchange = () => {
+      payButton.disabled = !inv.canCollect && !(inv.canCollectOriginalTotal && collectFull.checked);
+    };
     $<HTMLFormElement>("#end-form").classList.toggle("hidden", inv.status !== "IN_USE");
-    $<HTMLFormElement>("#adj-form").classList.toggle("hidden", inv.paymentStatus !== "UNPAID");
+    $<HTMLFormElement>("#adj-form").classList.toggle("hidden", inv.paymentStatus !== "UNPAID" || !["IN_USE", "COMPLETED"].includes(inv.status));
   } catch (e) {
     setState(box, "error", (e as Error).message);
   }
@@ -53,11 +61,16 @@ $<HTMLFormElement>("#pay-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const button = $<HTMLButtonElement>("#btn-pay");
   if (button.disabled) return;
-  if (!confirm("Confirm that the full amount due has been collected?")) return;
+  const collectFullAmount = $<HTMLInputElement>("#collect-full").checked;
+  const confirmation = collectFullAmount
+    ? "Collect the full original total and withdraw the pending adjustment request?"
+    : "Confirm that the full amount due has been collected?";
+  if (!confirm(confirmation)) return;
   button.disabled = true;
   // Refresh AFTER run finishes: its generic button reset must not override invoice eligibility.
   await run(async () => {
-    const r = await api.post<{ payment: { amountVnd: number } }>(`/api/staff/bookings/${bookingId}/checkout`, formData($("#pay-form") as HTMLFormElement), { idempotencyKey: payKey });
+    const body = { ...formData($("#pay-form") as HTMLFormElement), collectFullAmount };
+    const r = await api.post<{ payment: { amountVnd: number } }>(`/api/staff/bookings/${bookingId}/checkout`, body, { idempotencyKey: payKey });
     toast(`Payment recorded: ${money(r.payment.amountVnd)}`, "success");
     payKey = newIdempotencyKey();
   });

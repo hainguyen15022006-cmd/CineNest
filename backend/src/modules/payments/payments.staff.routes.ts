@@ -3,13 +3,9 @@ import { z } from "zod";
 import { parse } from "../../core/validate.js";
 import { ok } from "../../core/http.js";
 import { getIdempotencyKey, hashRequest, withIdempotency } from "../../core/idempotency.js";
-import { requireStaff } from "../../core/auth.js";
 import * as payments from "./payments.service.js";
 
 export const paymentsStaffRouter = Router();
-
-// Enforce STAFF role access (MANAGER is also allowed per system rules)
-paymentsStaffRouter.use(requireStaff);
 
 const idParam = z.coerce.number().int().positive();
 
@@ -24,14 +20,17 @@ paymentsStaffRouter.post("/bookings/:id/checkout", async (req, res) => {
   const id = parse(idParam, req.params.id);
   
   // Validate payment method against DB Schema
-  const { method } = parse(
-    z.object({ method: z.enum(["CASH", "BANK_TRANSFER", "CARD", "TRANSFER"]) }),
-    req.body
+  const { method, collectFullAmount } = parse(
+    z.object({
+      method: z.enum(["CASH", "TRANSFER"]),
+      collectFullAmount: z.boolean().optional().default(false),
+    }),
+    req.body,
   );
 
   const result = await withIdempotency(req.user!.id, key, hashRequest(req), async () => ({
     status: 201,
-    body: await payments.checkout(id, method as any, key, req.user!),
+    body: await payments.checkout(id, method, key, req.user!, collectFullAmount),
   }));
 
   res.setHeader("Idempotent-Replayed", String(result.replayed));

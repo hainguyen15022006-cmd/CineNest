@@ -17,7 +17,7 @@ const availabilitySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   startTime: z.string().regex(/^\d{2}:\d{2}$/),
   duration: z.coerce.number().int(),
-  guests: z.coerce.number().int().min(1).max(20),
+  guests: z.coerce.number().int().min(1).max(6),
 });
 
 roomsRouter.get("/", async (_req, res) => ok(res, await svc.listRooms()));
@@ -37,7 +37,7 @@ export const adminRoomsRouter = Router();
 
 const roomInput = z.object({
   name: z.string().trim().min(1).max(100),
-  capacity: z.number().int().min(1).max(20),
+  capacity: z.number().int().min(1).max(6),
   description: z.string().max(2000).optional(),
   amenities: z.array(z.string().max(100)).max(30).optional(),
   hourlyPriceVnd: z.number().int().min(0),

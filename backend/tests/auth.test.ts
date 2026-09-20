@@ -75,4 +75,11 @@ describe("Module 1 – tài khoản, phiên, giới hạn thử (T05, T17, T18)"
     expect(response.body.error.code).toBe("CANNOT_LOCK_SELF");
     expect((await manager.agent.get("/api/me")).status).toBe(200);
   });
+
+  it("updating a missing employee returns 404 instead of an internal error", async () => {
+    const manager = await loginAs(app, "MANAGER");
+    const response = await manager.agent.patch("/api/admin/staff/2147483647/active").send({ isActive: false });
+    expect(response.status).toBe(404);
+    expect(response.body.error.code).toBe("NOT_FOUND");
+  });
 });

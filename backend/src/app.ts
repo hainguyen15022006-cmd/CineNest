@@ -19,8 +19,6 @@ import { menuRouter } from "./modules/menu/menu.routes.js";
 import { bookingsRouter, myBookingsRouter } from "./modules/bookings/bookings.routes.js";
 import { staffRouter } from "./modules/staff/staff.routes.js";
 import { adminRouter } from "./modules/admin/admin.routes.js";
-import { paymentsStaffRouter } from "./modules/payments/payments.staff.routes.js";
-import { paymentsManagerRouter } from "./modules/payments/payments.manager.routes.js";
 
 export function createApp() {
   const app = express();
@@ -55,8 +53,6 @@ export function createApp() {
   api.use("/bookings", bookingsRouter);
   api.use("/staff", staffRouter);
   api.use("/admin", adminRouter);
-  api.use("/staff", paymentsStaffRouter);
-  api.use("/manager", paymentsManagerRouter);
   app.use("/api", api);
 
   // ---- Bản build của frontend (production): backend phục vụ thư mục frontend/dist ----

@@ -53,6 +53,8 @@ export function maxMovieMinutes(availableMinutes: number): number {
  * `availableMinutes` = thời lượng gói khi đặt trước; = thời gian còn lại khi chọn tại quán (trang 6).
  */
 export async function validateMovieForBooking(tx: Tx, movieId: number, availableMinutes: number) {
+  // Ngăn quản lý ngừng phim giữa lúc booking đang chụp snapshot lựa chọn.
+  await tx.$queryRaw`SELECT "id" FROM "movie" WHERE "id" = ${movieId} FOR SHARE`;
   const movie = await tx.movie.findUnique({ where: { id: movieId }, select: movieSelect });
   if (!movie || !movie.isActive) throw ApiError.unprocessable("MOVIE_UNAVAILABLE", "Phim không còn phục vụ");
   if (movie.durationMinutes > maxMovieMinutes(availableMinutes)) {
@@ -67,6 +69,9 @@ export async function validateMovieForBooking(tx: Tx, movieId: number, available
 /** MOV05/MOV06: khách đổi phim khi CONFIRMED và chưa đến giờ; đặt lại PENDING, tăng movie_version */
 export async function changeMovie(bookingId: number, movieId: number | null, actorId: number, isStaff: boolean) {
   return prisma.$transaction(async (tx) => {
+    // updateMovie khóa movie rồi cập nhật booking; giữ cùng thứ tự để tránh deadlock.
+    if (movieId) await tx.$queryRaw`SELECT "id" FROM "movie" WHERE "id" = ${movieId} FOR SHARE`;
+    await tx.$queryRaw`SELECT "id" FROM "booking" WHERE "id" = ${bookingId} FOR UPDATE`;
     const b = await tx.booking.findUnique({
       where: { id: bookingId },
       select: { customerId: true, status: true, startAt: true, endAt: true, movieVersion: true, movieTitleSnapshot: true },
@@ -138,7 +143,7 @@ export async function setPreparation(bookingId: number, status: Extract<Preparat
     // Giữ điều kiện version ngay trên UPDATE để một thay đổi phim xảy ra sau lần đọc
     // vẫn làm thao tác này thất bại thay vì ghi đè PENDING/UNAVAILABLE mới hơn.
     const updated = await tx.booking.updateMany({
-      where: { id: bookingId, movieVersion: expectedVersion, movieId: { not: null } },
+      where: { id: bookingId, movieVersion: expectedVersion, movieId: { not: null }, status: { in: ["CONFIRMED", "IN_USE"] } },
       data: { preparationStatus: status },
     });
     if (updated.count === 0) {

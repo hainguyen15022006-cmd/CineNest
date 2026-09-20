@@ -6,6 +6,7 @@
  *   23503 foreign_key_violation-> 422 INVALID_REFERENCE
  *   25P02 in_failed_sql_transaction -> 500 (lỗi lập trình: dùng tiếp giao dịch đã hỏng)
  *   57014 query_canceled (statement_timeout) -> 409 BUSY
+ *   P2002/P2003/P2025 Prisma errors -> 409/422/404
  */
 import { ApiError } from "./http.js";
 
@@ -37,7 +38,14 @@ export function mapDbError(err: unknown): ApiError | null {
     case "23503":
       return ApiError.unprocessable("INVALID_REFERENCE", "Tham chiếu không hợp lệ", { constraint });
     case "57014":
+    case "P2034":
       return ApiError.conflict("BUSY", "Hệ thống đang bận, vui lòng thử lại");
+    case "P2002":
+      return ApiError.conflict("DUPLICATE", "Dữ liệu đã tồn tại hoặc thao tác đã được thực hiện", { constraint });
+    case "P2003":
+      return ApiError.unprocessable("INVALID_REFERENCE", "Tham chiếu không hợp lệ", { constraint });
+    case "P2025":
+      return ApiError.notFound("NOT_FOUND", "Không tìm thấy dữ liệu cần cập nhật");
     default:
       return null;
   }
