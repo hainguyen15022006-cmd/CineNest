@@ -26,6 +26,21 @@ export function hasRole(me: Me | null, role: Role): boolean {
   return me.role === role;
 }
 
+/**
+ * Chỉ cho phép quay lại một đường dẫn cùng origin sau đăng nhập.
+ * Tránh `?next=https://...` biến trang đăng nhập thành open redirect.
+ */
+export function safeNextPath(raw: string | null): string | null {
+  if (!raw) return null;
+  try {
+    const target = new URL(raw, location.origin);
+    if (target.origin !== location.origin) return null;
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return null;
+  }
+}
+
 /** Chuyển về login nếu chưa đăng nhập; về trang chủ kèm thông báo nếu sai vai trò. */
 export async function requireRole(role: Role): Promise<Me> {
   const me = await currentUser();
