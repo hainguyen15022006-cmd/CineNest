@@ -13,14 +13,14 @@
 
     <form id="movie-form" class="card"><h2>Add or edit movie</h2><input type="hidden" name="id">
       <div class="row">
-        <div class="field"><label for="title">Movie title</label><input id="title" name="title" required></div>
-        <div class="field"><label for="genre">Genre</label><input id="genre" name="genre" required></div>
-        <div class="field"><label for="durationMinutes">Duration (minutes)</label><input id="durationMinutes" name="durationMinutes" type="number" min="1" required></div>
-        <div class="field"><label for="ageLabel">Age rating</label><input id="ageLabel" name="ageLabel" value="P" required></div>
+        <div class="field"><label for="title">Movie title</label><input id="title" name="title" maxlength="200" required></div>
+        <div class="field"><label for="genre">Genre</label><input id="genre" name="genre" maxlength="50" required></div>
+        <div class="field"><label for="durationMinutes">Duration (minutes)</label><input id="durationMinutes" name="durationMinutes" type="number" min="1" max="600" required></div>
+        <div class="field"><label for="ageLabel">Age rating</label><input id="ageLabel" name="ageLabel" value="P" maxlength="10" required></div>
         <div class="field"><label for="isActive">Available</label><select id="isActive" name="isActive"><option value="true">Yes</option><option value="false">No</option></select></div>
       </div>
-      <div class="field"><label for="description">Description</label><input id="description" name="description"></div>
-      <div class="field"><label for="posterUrl">Poster URL</label><input id="posterUrl" name="posterUrl"></div>
+      <div class="field"><label for="description">Description</label><textarea id="description" name="description" maxlength="2000" rows="3"></textarea></div>
+      <div class="field"><label for="posterUrl">Poster URL</label><input id="posterUrl" name="posterUrl" type="url" maxlength="500"></div>
       <div class="row"><button type="submit">Save</button><button type="button" class="secondary" id="btn-reset">New</button></div>
     </form>
     <div class="row" style="margin-bottom:8px"><div class="field" style="flex:1"><label for="search">Search movies by title</label><input id="search" type="search" placeholder="Enter a movie title…" autocomplete="off"></div>

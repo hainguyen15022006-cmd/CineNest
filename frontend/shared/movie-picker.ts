@@ -32,6 +32,7 @@ export function mountMoviePicker(host: HTMLElement, opts: MoviePickerOptions) {
   let items: Movie[] = [];
   let timer: number | undefined;
   let genresLoaded = false;
+  let requestSeq = 0;
 
   host.innerHTML = `
     <div class="movie-picker">
@@ -54,11 +55,17 @@ export function mountMoviePicker(host: HTMLElement, opts: MoviePickerOptions) {
 
   function card(m: Movie): string {
     const tooLong = opts.maxMinutes !== undefined && m.durationMinutes > opts.maxMinutes;
-    return `<label class="card movie-card" style="${tooLong ? "opacity:.5" : ""}">
-      <input type="radio" name="${name}" value="${m.id}" ${tooLong ? "disabled" : ""} ${selectedId === m.id ? "checked" : ""}>
-      ${m.posterUrl ? `<img src="${escapeHtml(m.posterUrl)}" alt="" loading="lazy" width="60" height="90" data-movie-poster style="float:right;margin-left:8px;border-radius:4px;object-fit:cover">` : ""}
+    const unavailable = !m.isActive;
+    const disabled = tooLong || unavailable;
+    const description = m.description.trim();
+    const summary = description.length > 160 ? `${description.slice(0, 157)}…` : description;
+    return `<label class="card movie-card" style="${disabled ? "opacity:.5" : ""}">
+      <input type="radio" name="${name}" value="${m.id}" ${disabled ? "disabled" : ""} ${selectedId === m.id ? "checked" : ""}>
+      ${m.posterUrl ? `<img src="${escapeHtml(m.posterUrl)}" alt="Poster for ${escapeHtml(m.title)}" loading="lazy" width="60" height="90" data-movie-poster style="float:right;margin-left:8px;border-radius:4px;object-fit:cover">` : ""}
       <strong>${escapeHtml(m.title)}</strong><br><span class="muted">${escapeHtml(m.genre)} · ${m.durationMinutes} min · ${escapeHtml(m.ageLabel)}</span>
-      ${tooLong ? `<br><span class="error-text">Too long (maximum ${opts.maxMinutes} min)</span>` : ""}</label>`;
+      ${summary ? `<p class="muted" style="margin:.4rem 0 0">${escapeHtml(summary)}</p>` : ""}
+      ${tooLong ? `<span class="error-text">Too long (maximum ${opts.maxMinutes} min)</span>` : ""}
+      ${unavailable ? '<span class="error-text">No longer available</span>' : ""}</label>`;
   }
 
   function render(append: boolean) {
@@ -79,20 +86,28 @@ export function mountMoviePicker(host: HTMLElement, opts: MoviePickerOptions) {
   }
 
   async function load(next = false) {
-    page = next ? page + 1 : 1;
+    const requestedPage = next ? page + 1 : 1;
+    const requestId = ++requestSeq;
+    $more.disabled = true;
     $count.textContent = "Loading…";
     try {
       const res = await api.get<Paged<Movie>>(`/api/movies${qs({
-        q: $q.value.trim() || undefined, genre: $genre.value || undefined, page, limit,
+        q: $q.value.trim() || undefined, genre: $genre.value || undefined, page: requestedPage, limit,
         maxMinutes: opts.maxMinutes && (!$fit || $fit.checked) ? opts.maxMinutes : undefined,
       })}`);
+      if (requestId !== requestSeq) return;
+      page = requestedPage;
       total = res.total;
       items = next ? items.concat(res.items) : res.items;
       // Giữ phim đã chọn ở đầu danh sách nếu nó không thuộc trang đang xem
       if (!next && selected && !items.some((m) => m.id === selected!.id)) items = [selected, ...items];
       render(next);
     } catch (e) {
-      $count.textContent = `Could not load movies: ${(e as Error).message}`;
+      if (requestId !== requestSeq) return;
+      $count.innerHTML = `Could not load movies: ${escapeHtml((e as Error).message)} <button type="button" class="small secondary" data-movie-retry>Retry</button>`;
+      $count.querySelector<HTMLButtonElement>("[data-movie-retry]")?.addEventListener("click", () => void load(next));
+    } finally {
+      if (requestId === requestSeq) $more.disabled = false;
     }
   }
 

@@ -111,13 +111,44 @@ export function listPreparation(dayStart: Date, dayEnd: Date) {
 
 /** MOV06: đánh dấu READY với khóa lạc quan movie_version; MOV07: UNAVAILABLE */
 export async function setPreparation(bookingId: number, status: Extract<PreparationStatus, "READY" | "UNAVAILABLE" | "PENDING">, expectedVersion: number, actorId: number) {
-  const r = await prisma.booking.updateMany({
-    where: { id: bookingId, movieVersion: expectedVersion, movieId: { not: null } },
-    data: { preparationStatus: status },
+  return prisma.$transaction(async (tx) => {
+    const current = await tx.booking.findUnique({
+      where: { id: bookingId },
+      select: {
+        status: true,
+        movieId: true,
+        movieVersion: true,
+        preparationStatus: true,
+        movie: { select: { isActive: true } },
+      },
+    });
+    if (!current || current.movieId === null) {
+      throw ApiError.notFound("BOOKING_NOT_FOUND", "Không tìm thấy booking có phim cần chuẩn bị");
+    }
+    if (current.movieVersion !== expectedVersion) {
+      throw ApiError.conflict("MOVIE_CHANGED", "Lựa chọn phim đã thay đổi, hãy tải lại trước khi xác nhận");
+    }
+    if (current.status !== "CONFIRMED" && current.status !== "IN_USE") {
+      throw ApiError.conflict("INVALID_TRANSITION", "Booking không còn ở trạng thái cho phép chuẩn bị phim");
+    }
+    if (status !== "UNAVAILABLE" && !current.movie?.isActive) {
+      throw ApiError.unprocessable("MOVIE_UNAVAILABLE", "Phim không còn phục vụ");
+    }
+
+    // Giữ điều kiện version ngay trên UPDATE để một thay đổi phim xảy ra sau lần đọc
+    // vẫn làm thao tác này thất bại thay vì ghi đè PENDING/UNAVAILABLE mới hơn.
+    const updated = await tx.booking.updateMany({
+      where: { id: bookingId, movieVersion: expectedVersion, movieId: { not: null } },
+      data: { preparationStatus: status },
+    });
+    if (updated.count === 0) {
+      throw ApiError.conflict("MOVIE_CHANGED", "Lựa chọn phim đã thay đổi, hãy tải lại trước khi xác nhận");
+    }
+    await tx.bookingStatusHistory.create({
+      data: { bookingId, field: "preparation_status", oldValue: current.preparationStatus, newValue: status, actorId },
+    });
+    return tx.booking.findUnique({ where: { id: bookingId }, select: { id: true, preparationStatus: true, movieVersion: true } });
   });
-  if (r.count === 0) throw ApiError.conflict("MOVIE_CHANGED", "Lựa chọn phim đã thay đổi, hãy tải lại trước khi xác nhận");
-  await prisma.bookingStatusHistory.create({ data: { bookingId, field: "preparation_status", newValue: status, actorId } });
-  return prisma.booking.findUnique({ where: { id: bookingId }, select: { id: true, preparationStatus: true, movieVersion: true } });
 }
 
 // ---- Quản trị phim ----
@@ -130,11 +161,14 @@ export function createMovie(input: MovieInput) {
 /** MOV07: ngừng phục vụ phim -> booking đang chọn phim đó chuyển UNAVAILABLE để chọn lại */
 export async function updateMovie(id: number, input: Partial<MovieInput>) {
   return prisma.$transaction(async (tx) => {
+    const previous = await tx.movie.findUnique({ where: { id }, select: { isActive: true } });
+    if (!previous) throw ApiError.notFound("MOVIE_NOT_FOUND", "Không tìm thấy phim");
     const movie = await tx.movie.update({ where: { id }, data: input, select: movieSelect });
-    if (input.isActive === false) {
+    if (previous.isActive && input.isActive === false) {
       await tx.booking.updateMany({
         where: { movieId: id, status: { in: ["CONFIRMED", "IN_USE"] } },
-        data: { preparationStatus: "UNAVAILABLE" },
+        // Tăng version để mọi màn hình nhân viên đang giữ lựa chọn cũ nhận MOVIE_CHANGED.
+        data: { preparationStatus: "UNAVAILABLE", movieVersion: { increment: 1 } },
       });
     }
     return movie;
