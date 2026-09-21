@@ -14,7 +14,7 @@
  *   - MovieLens: movieId, title "Tên (Năm)", genres "A|B|C"  → KHÔNG có thời lượng; chỉ nhập khi có --assume-runtime
  *   - CSV chung: title + runtime bắt buộc; genre/genres, overview/description, poster/poster_url, year/release_date, age/age_label tùy chọn
  *
- * Quy tắc theo đặc tả trang 6: chỉ nhập phim có thời lượng (MOV03 cần số phút); thể loại dịch sang tiếng Việt;
+ * Quy tắc theo đặc tả trang 6: chỉ nhập phim có thời lượng (MOV03 cần số phút); thể loại chuẩn hóa sang tiếng Anh;
  * nhãn tuổi mặc định NR (chưa phân loại) – quản lý sửa tay; chạy lại không tạo trùng theo ID nguồn.
  */
 import { createReadStream } from "node:fs";
@@ -55,14 +55,15 @@ if (MIN_RUNTIME > MAX_RUNTIME) {
   process.exit(1);
 }
 
-// ---------- ánh xạ thể loại sang tiếng Việt ----------
-const GENRE_VI: Record<string, string> = {
-  Action: "Hành động", Adventure: "Phiêu lưu", Animation: "Hoạt hình", Children: "Thiếu nhi", Comedy: "Hài", Crime: "Hình sự",
-  Documentary: "Tài liệu", Drama: "Tâm lý", Family: "Gia đình", Fantasy: "Giả tưởng", "Film-Noir": "Phim noir", History: "Lịch sử",
-  Horror: "Kinh dị", Music: "Âm nhạc", Musical: "Nhạc kịch", Mystery: "Bí ẩn", Romance: "Tình cảm", "Science Fiction": "Khoa học viễn tưởng",
-  "Sci-Fi": "Khoa học viễn tưởng", "TV Movie": "Phim truyền hình", Thriller: "Giật gân", War: "Chiến tranh", Western: "Miền Tây", IMAX: "IMAX",
+// ---------- chuẩn hóa thể loại sang tiếng Anh ----------
+const GENRE_EN: Record<string, string> = {
+  "Hành động": "Action", "Phiêu lưu": "Adventure", "Hoạt hình": "Animation", "Thiếu nhi": "Children", "Hài": "Comedy",
+  "Hình sự": "Crime", "Tài liệu": "Documentary", "Tâm lý": "Drama", "Gia đình": "Family", "Giả tưởng": "Fantasy",
+  "Phim noir": "Film-Noir", "Lịch sử": "History", "Kinh dị": "Horror", "Âm nhạc": "Music", "Nhạc kịch": "Musical",
+  "Bí ẩn": "Mystery", "Tình cảm": "Romance", "Khoa học viễn tưởng": "Science Fiction", "Phim truyền hình": "TV Movie",
+  "Giật gân": "Thriller", "Chiến tranh": "War", "Miền Tây": "Western", "Sci-Fi": "Science Fiction",
 };
-const toVi = (g: string) => GENRE_VI[g.trim()] ?? g.trim();
+const toEnglish = (g: string) => GENRE_EN[g.trim()] ?? g.trim();
 
 /** genres của TMDB metadata là chuỗi kiểu Python: "[{'id': 18, 'name': 'Drama'}, ...]" – không phải JSON hợp lệ */
 function parseGenres(raw: string | undefined): string[] {
@@ -126,14 +127,14 @@ function toMovie(row: Row, format: "tmdb" | "movielens" | "generic"): MovieRow |
   const posterUrl = pick(row, "poster_url", "poster") ?? (posterPath ? `https://image.tmdb.org/t/p/w342${posterPath}` : null);
   const overview = pick(row, "overview", "description")?.trim();
   const votesRaw = pick(row, "vote_count", "votes");
-  const genreVi = genres.length ? toVi(genres[0]!) : "Khác";
-  const description = overview ?? [genreVi, year, format === "movielens" && ASSUME_RUNTIME ? "thời lượng giả định (MovieLens không cung cấp)" : null].filter(Boolean).join(" · ");
+  const genreEn = genres.length ? toEnglish(genres[0]!) : "Other";
+  const description = overview ?? [genreEn, year, format === "movielens" && ASSUME_RUNTIME ? "assumed runtime (MovieLens does not provide one)" : null].filter(Boolean).join(" · ");
 
   return {
     source: format === "tmdb" ? "TMDB" : format === "movielens" ? "MOVIELENS" : "CSV",
     externalId: pick(row, format === "tmdb" ? "id" : "movieId", "external_id", "source_id") ?? null,
     title,
-    genre: genreVi,
+    genre: genreEn,
     durationMinutes: Math.round(runtime),
     ageLabel: pick(row, "age_label", "age", "certification") ?? (adult ? "T18" : "NR"),
     description: description.slice(0, 2000),
