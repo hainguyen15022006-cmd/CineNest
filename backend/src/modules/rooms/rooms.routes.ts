@@ -46,6 +46,10 @@ const roomInput = z.object({
 });
 
 adminRoomsRouter.get("/", async (_req, res) => ok(res, await svc.listRooms(true)));
+adminRoomsRouter.get("/:id", async (req, res) => {
+  const id = parse(z.coerce.number().int().positive(), req.params.id);
+  ok(res, await svc.getRoom(id, true));
+});
 adminRoomsRouter.post("/", async (req, res) => ok(res, await svc.createRoom(parse(roomInput, req.body)), 201));
 adminRoomsRouter.patch("/:id", async (req, res) => {
   const id = parse(z.coerce.number().int().positive(), req.params.id);
