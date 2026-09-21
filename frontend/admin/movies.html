@@ -23,7 +23,7 @@
       <div class="field"><label for="posterUrl">Poster URL</label><input id="posterUrl" name="posterUrl" type="url" maxlength="500"></div>
       <div class="row"><button type="submit">Save</button><button type="button" class="secondary" id="btn-reset">New</button></div>
     </form>
-    <div class="row" style="margin-bottom:8px"><div class="field" style="flex:1"><label for="search">Search movies by title</label><input id="search" type="search" placeholder="Enter a movie title…" autocomplete="off"></div>
+    <div class="row search-row"><div class="field flex-grow"><label for="search">Search movies by title</label><input id="search" type="search" placeholder="Enter a movie title…" autocomplete="off"></div>
       <p class="muted">The movie catalog is imported with <code>npm run db:import-movies</code> (The Movies Dataset – Kaggle). The NR label means not rated; a manager can update it when an accurate rating is available.</p></div>
     <div id="list" class="table-wrap"></div>
   </main>

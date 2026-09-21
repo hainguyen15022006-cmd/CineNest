@@ -75,7 +75,7 @@ export async function mountMenuPicker(host: HTMLElement, initial: MenuSelection[
               (item) => `
                 <tr>
                   <td>
-                    <div style="display:flex;align-items:center;gap:12px">
+                    <div class="menu-item-cell">
                       ${
                         item.imageUrl
                           ? `<img
@@ -85,7 +85,7 @@ export async function mountMenuPicker(host: HTMLElement, initial: MenuSelection[
                               width="64"
                               height="64"
                               data-menu-image
-                              style="border-radius:8px;object-fit:cover"
+                              class="menu-thumb"
                             >`
                           : ""
                       }
@@ -106,7 +106,7 @@ export async function mountMenuPicker(host: HTMLElement, initial: MenuSelection[
                       value="${selected.get(item.id) ?? 0}"
                       data-id="${item.id}"
                       aria-label="Quantity for ${escapeHtml(item.name)}"
-                      style="width:80px"
+                      class="quantity-input"
                     >
                     <div
                       class="error-text"

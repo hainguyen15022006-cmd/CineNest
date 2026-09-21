@@ -13,8 +13,8 @@ import "./styles.css";
 const NAV: { role: "GUEST" | "CUSTOMER" | "STAFF" | "MANAGER"; items: [string, string][] }[] = [
   { role: "GUEST", items: [["Find a room", "index.html"], ["Sign in", "login.html"], ["Create account", "register.html"]] },
   { role: "CUSTOMER", items: [["Find a room", "index.html"], ["My bookings", "my-bookings.html"]] },
-  { role: "STAFF", items: [["Today's schedule", "staff/schedule.html"], ["Walk-in booking", "staff/walk-in.html"], ["Movie preparation", "staff/movie-preparation.html"], ["Food orders", "staff/orders.html"]] },
-  { role: "MANAGER", items: [["Management", "admin/index.html"], ["Adjustment approvals", "admin/adjustments.html"], ["Reports", "admin/reports.html"]] },
+  { role: "STAFF", items: [["Today's schedule", "staff/schedule.html"], ["Walk-in", "staff/walk-in.html"], ["Movies", "staff/movie-preparation.html"], ["Food orders", "staff/orders.html"]] },
+  { role: "MANAGER", items: [["Management", "admin/index.html"], ["Approvals", "admin/adjustments.html"], ["Reports", "admin/reports.html"]] },
 ];
 
 export async function mountLayout(title?: string): Promise<Me | null> {
@@ -24,13 +24,24 @@ export async function mountLayout(title?: string): Promise<Me | null> {
   header.id = "app-header";
 
   const groups = NAV.filter((g) => (me ? g.role === me.role || (g.role === "STAFF" && me.role === "MANAGER") : g.role === "GUEST"));
+  if (!document.querySelector(".skip-link")) {
+    document.body.insertAdjacentHTML("afterbegin", `<a class="skip-link" href="#main-content">Skip to main content</a>`);
+  }
+  const main = document.querySelector("main");
+  if (main && !main.id) main.id = "main-content";
+  const currentPath = location.pathname.replace(/\/$/, "/index.html");
+  const isCurrent = (href: string) => currentPath.endsWith(`/${href}`) || (href === "index.html" && /\/(?:index\.html)?$/.test(currentPath));
+
   header.innerHTML = `
     <div class="wrap">
-      <a class="brand" href="${base}index.html">🎬 CineNest</a>
+      <a class="brand" href="${base}index.html" aria-label="CineNest home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none"><path d="M4 8.5h16v10.25A1.25 1.25 0 0 1 18.75 20H5.25A1.25 1.25 0 0 1 4 18.75V8.5Z" fill="currentColor"/><path d="m4.5 4 14.8-1.7.7 4.2L5.2 8.2 4.5 4Zm3.1-.35L10 7.55m3-4.55 2.4 3.9" stroke="#10172b" stroke-width="1.7"/></svg></span>
+        <span>CineNest</span>
+      </a>
       <nav aria-label="Main navigation">
-        ${groups.flatMap((g) => g.items).map(([text, href]) => `<a href="${base}${href}">${text}</a>`).join("")}
+        ${groups.flatMap((g) => g.items).map(([text, href]) => `<a href="${base}${href}"${isCurrent(href) ? ' aria-current="page"' : ""}>${text}</a>`).join("")}
       </nav>
-      <div class="me">${me ? `<span>${escapeHtml(me.name)} · ${label(me.role)}</span> <button type="button" id="btn-logout">Sign out</button>` : ""}</div>
+      <div class="me">${me ? `<span class="user-chip">${escapeHtml(me.name)} · ${label(me.role)}</span> <button type="button" class="secondary small" id="btn-logout">Sign out</button>` : ""}</div>
     </div>`;
   document.getElementById("btn-logout")?.addEventListener("click", () => void logout());
   if (title) document.title = `${title} – CineNest`;

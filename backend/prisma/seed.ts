@@ -40,13 +40,13 @@ async function main() {
     { name: "Room 101 – Classic", capacity: 2, price: 89_000, amenities: ["120-inch projector", "Soundbar", "Air conditioning", "Two-seat sofa"] },
     { name: "Room 102 – Classic", capacity: 2, price: 89_000, amenities: ["120-inch projector", "Soundbar", "Air conditioning", "Two-seat sofa"] },
     { name: "Room 103 – Classic", capacity: 2, price: 89_000, amenities: ["120-inch projector", "Soundbar", "Air conditioning", "Floor seating"] },
-    { name: "Room 201 – Queen", capacity: 3, price: 99_000, amenities: ["150-inch projector", "2.1 sound system", "Air conditioning", "Air purifier", "Private restroom"] },
-    { name: "Room 202 – Queen", capacity: 3, price: 99_000, amenities: ["150-inch projector", "2.1 sound system", "Air conditioning", "Air purifier", "Private restroom"] },
-    { name: "Room 203 – Queen", capacity: 3, price: 99_000, amenities: ["150-inch projector", "2.1 sound system", "Air conditioning", "Private restroom"] },
-    { name: "Room 301 – King", capacity: 4, price: 109_000, amenities: ["200-inch projector", "5.1 sound system", "Air conditioning", "Air purifier", "Private restroom", "Window"] },
-    { name: "Room 302 – King", capacity: 4, price: 109_000, amenities: ["200-inch projector", "5.1 sound system", "Air conditioning", "Air purifier", "Private restroom", "Window"] },
-    { name: "Room 401 – Group", capacity: 6, price: 139_000, amenities: ["200-inch projector", "5.1 sound system", "Air conditioning", "Two sofas", "Large table"] },
-    { name: "Room 402 – Group", capacity: 6, price: 139_000, amenities: ["200-inch projector", "5.1 sound system", "Air conditioning", "Two sofas", "Large table"] },
+    { name: "Room 201 – Queen", capacity: 3, price: 99_000, amenities: ["Air purifier", "150-inch projector", "2.1 sound system", "Premium sofa", "Private restroom", "Mini fridge"] },
+    { name: "Room 202 – Queen", capacity: 3, price: 99_000, amenities: ["Air purifier", "150-inch projector", "2.1 sound system", "Premium sofa", "Private restroom", "Mini fridge"] },
+    { name: "Room 203 – Queen", capacity: 3, price: 99_000, amenities: ["Air purifier", "150-inch projector", "2.1 sound system", "Premium sofa", "Private restroom", "Ambient lighting"] },
+    { name: "Room 301 – King", capacity: 4, price: 109_000, amenities: ["Air purifier", "4K laser projector", "5.1 surround sound", "Reclining sofa", "Private restroom", "Acoustic treatment", "Wireless charger"] },
+    { name: "Room 302 – King", capacity: 4, price: 109_000, amenities: ["Air purifier", "4K laser projector", "5.1 surround sound", "Reclining sofa", "Private restroom", "Acoustic treatment", "Wireless charger"] },
+    { name: "Room 401 – Group", capacity: 6, price: 139_000, amenities: ["Air purifier", "4K 200-inch projector", "7.1 surround sound", "Two premium sofas", "Large table", "Ambient lighting", "Game console", "Wireless chargers"] },
+    { name: "Room 402 – Group", capacity: 6, price: 139_000, amenities: ["Air purifier", "4K 200-inch projector", "7.1 surround sound", "Two premium sofas", "Large table", "Ambient lighting", "Karaoke microphones", "Wireless chargers"] },
   ];
   const rooms = [];
   for (const [i, r] of roomDefs.entries()) {

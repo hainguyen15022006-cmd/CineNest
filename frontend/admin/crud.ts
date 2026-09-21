@@ -29,7 +29,7 @@ export function mountCrud<T extends { id: number }>(opts: {
       if (!rows.length) return setState(list, "empty");
       const pages = Math.max(1, Math.ceil(total / limit));
       const pager = paged && pages > 1
-        ? `<div class="row" style="justify-content:space-between;margin-top:8px"><span class="muted">${total} records · page ${page}/${pages}</span>
+        ? `<div class="row pagination-row"><span class="muted">${total} records · page ${page}/${pages}</span>
              <span><button type="button" class="small secondary" data-page="${page - 1}" ${page <= 1 ? "disabled" : ""}>‹ Previous</button>
              <button type="button" class="small secondary" data-page="${page + 1}" ${page >= pages ? "disabled" : ""}>Next ›</button></span></div>`
         : paged ? `<p class="muted">${total} records</p>` : "";

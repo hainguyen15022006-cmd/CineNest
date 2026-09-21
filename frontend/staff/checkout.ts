@@ -25,7 +25,7 @@ async function load() {
         <tr><td>Adjustment ${inv.adjustment ? `(${label(inv.adjustment.kind)} – ${label(inv.adjustment.status)}: ${escapeHtml(inv.adjustment.reason)})` : "(none)"}</td><td class="right">−${money(inv.approvedAdjustmentVnd)}</td></tr>
         <tr><th>Amount due</th><th class="right">${money(inv.amountDueVnd)}</th></tr>
       </tbody></table>
-      ${inv.blockers.length ? `<ul class="error-text">${inv.blockers.map((b) => `<li>${escapeHtml(BLOCKER[b] ?? b)}</li>`).join("")}</ul>` : `<p style="color:var(--ok)">Payment can be collected.</p>`}
+      ${inv.blockers.length ? `<ul class="error-text">${inv.blockers.map((b) => `<li>${escapeHtml(BLOCKER[b] ?? b)}</li>`).join("")}</ul>` : `<p class="status-ok">Payment can be collected.</p>`}
       <p><a href="./booking-detail.html?id=${inv.bookingId}">← Booking details</a> · <a href="./orders.html?bookingId=${inv.bookingId}">Food orders</a></p>`;
     const payButton = $<HTMLButtonElement>("#btn-pay");
     const collectFull = $<HTMLInputElement>("#collect-full");

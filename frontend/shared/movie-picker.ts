@@ -37,14 +37,14 @@ export function mountMoviePicker(host: HTMLElement, opts: MoviePickerOptions) {
   host.innerHTML = `
     <div class="movie-picker">
       <div class="row">
-        <div class="field" style="flex:2;min-width:200px"><label for="${name}-q">Search movies</label><input id="${name}-q" type="search" placeholder="Enter a movie title…" autocomplete="off"></div>
+        <div class="field movie-search"><label for="${name}-q">Search movies</label><input id="${name}-q" type="search" placeholder="Enter a movie title…" autocomplete="off"></div>
         <div class="field"><label for="${name}-genre">Genre</label><select id="${name}-genre"><option value="">All</option></select></div>
-        ${opts.maxMinutes ? `<label class="muted" style="padding-bottom:8px"><input type="checkbox" id="${name}-fit" checked> Only movies that fit this session (≤ ${opts.maxMinutes} min)</label>` : ""}
+        ${opts.maxMinutes ? `<label class="muted fit-filter"><input type="checkbox" id="${name}-fit" checked> Only movies that fit this session (≤ ${opts.maxMinutes} min)</label>` : ""}
       </div>
       ${opts.allowNone ? `<label class="card"><input type="radio" name="${name}" value="" ${selectedId === null ? "checked" : ""}> ${escapeHtml(opts.noneLabel ?? "Choose at the café (no movie selected)")}</label>` : ""}
       <p class="muted" id="${name}-count" aria-live="polite"></p>
       <div class="grid" id="${name}-grid"></div>
-      <div class="row" style="margin-top:8px"><button type="button" class="secondary small hidden" id="${name}-more">Show more</button></div>
+      <div class="row action-row"><button type="button" class="secondary small hidden" id="${name}-more">Show more</button></div>
     </div>`;
   const $q = host.querySelector<HTMLInputElement>(`#${name}-q`)!;
   const $genre = host.querySelector<HTMLSelectElement>(`#${name}-genre`)!;
@@ -59,11 +59,11 @@ export function mountMoviePicker(host: HTMLElement, opts: MoviePickerOptions) {
     const disabled = tooLong || unavailable;
     const description = m.description.trim();
     const summary = description.length > 160 ? `${description.slice(0, 157)}…` : description;
-    return `<label class="card movie-card" style="${disabled ? "opacity:.5" : ""}">
+    return `<label class="card movie-card${disabled ? " is-disabled" : ""}">
       <input type="radio" name="${name}" value="${m.id}" ${disabled ? "disabled" : ""} ${selectedId === m.id ? "checked" : ""}>
-      ${m.posterUrl ? `<img src="${escapeHtml(m.posterUrl)}" alt="Poster for ${escapeHtml(m.title)}" loading="lazy" width="60" height="90" data-movie-poster style="float:right;margin-left:8px;border-radius:4px;object-fit:cover">` : ""}
+      ${m.posterUrl ? `<img class="movie-poster" src="${escapeHtml(m.posterUrl)}" alt="Poster for ${escapeHtml(m.title)}" loading="lazy" width="60" height="90" data-movie-poster>` : ""}
       <strong>${escapeHtml(m.title)}</strong><br><span class="muted">${escapeHtml(m.genre)} · ${m.durationMinutes} min · ${escapeHtml(m.ageLabel)}</span>
-      ${summary ? `<p class="muted" style="margin:.4rem 0 0">${escapeHtml(summary)}</p>` : ""}
+      ${summary ? `<p class="muted movie-summary">${escapeHtml(summary)}</p>` : ""}
       ${tooLong ? `<span class="error-text">Too long (maximum ${opts.maxMinutes} min)</span>` : ""}
       ${unavailable ? '<span class="error-text">No longer available</span>' : ""}</label>`;
   }

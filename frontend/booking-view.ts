@@ -42,7 +42,7 @@ async function load() {
       picker$.classList.remove("hidden");
       const max = (new Date(b.endAt).getTime() - new Date(b.startAt).getTime()) / 60000 - 10;
       const picker = mountMoviePicker(picker$, { maxMinutes: max, selectedId: b.movieId ?? null, allowNone: true, onSelect: () => undefined });
-      picker$.insertAdjacentHTML("beforeend", `<div class="row" style="margin-top:8px"><button type="button" class="small" id="btn-save-movie">Save movie</button></div>`);
+      picker$.insertAdjacentHTML("beforeend", `<div class="row action-row"><button type="button" class="small" id="btn-save-movie">Save movie</button></div>`);
       $("#btn-save-movie").addEventListener("click", async (e) => {
         await run(async () => { await api.patch(`/api/bookings/${b.id}/movie`, { movieId: picker.selectedId }); toast("Movie updated successfully", "success"); await load(); }, e.currentTarget as HTMLButtonElement);
       });

@@ -37,14 +37,15 @@ try {
   const rooms = await roomsRequest;
   roomsBox.innerHTML = rooms.length
     ? rooms.map((r, index) => `
-      <article class="card">
-        ${r.images?.[0] ? `<img src="${escapeHtml(r.images[0].url)}" alt="${escapeHtml(r.name)}" width="800" height="500" decoding="async" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} style="width:100%;height:auto;border-radius:8px;aspect-ratio:16/10;object-fit:cover">` : ""}
-        <h3 style="margin:8px 0 4px">${escapeHtml(r.name)}</h3>
-        <p class="muted">Up to ${r.capacity} guests · ${money(r.hourlyPriceVnd)}/hour</p>
-        ${Array.isArray(r.amenities) && r.amenities.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin:6px 0">${r.amenities.slice(0, 3).map((a) => `<span class="badge">${escapeHtml(a)}</span>`).join("")}</div>` : ""}
-        <div style="margin-top:8px">
+      <article class="card room-card">
+        ${r.images?.[0] ? `<img class="room-card-media" src="${escapeHtml(r.images[0].url)}" alt="${escapeHtml(r.name)}" width="800" height="500" decoding="async" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'}>` : ""}
+        <div class="room-card-body"><h3>${escapeHtml(r.name)}</h3>
+        <p class="room-meta">Up to ${r.capacity} guests</p>
+        <p class="room-price"><strong>${money(r.hourlyPriceVnd)}</strong><span class="muted"> / hour</span></p>
+        ${Array.isArray(r.amenities) && r.amenities.length ? `<div class="amenity-list">${r.amenities.slice(0, 4).map((a) => `<span class="badge">${escapeHtml(a)}</span>`).join("")}</div>` : ""}
+        <div class="room-actions">
           <a class="btn small secondary" href="./room.html?id=${r.id}">View details</a>
-        </div>
+        </div></div>
       </article>`).join("")
     : "";
   if (!rooms.length) setState(roomsBox, "empty", "No rooms are available");

@@ -13,9 +13,14 @@
   <!-- Chủ sở hữu: Chúc (người 2) · Đặc tả: trang 10 – Trang chủ có form tìm phòng -->
   <header id="app-header"></header>
   <main>
-    <h1>Find a room</h1>
+    <section class="hero" aria-labelledby="home-title">
+      <p class="page-eyebrow">Private cinema · Your way</p>
+      <h1 id="home-title">Your own screen.<br>Your perfect night.</h1>
+      <p class="hero-copy">Choose a private room, set your time, and make the experience yours with a movie and food prepared before you arrive.</p>
+    </section>
 
-    <form id="search-form" class="card">
+    <form id="search-form" class="card" aria-label="Search available rooms">
+      <h2 class="card-title">Plan your session</h2>
       <div class="row">
         <div class="field"><label for="date">Date</label><input id="date" name="date" type="date" required></div>
         <div class="field"><label for="duration">Duration</label><select id="duration" name="duration"><option value="120">2 hours</option><option value="180">3 hours</option></select></div>
@@ -25,7 +30,7 @@
       </div>
       <p class="muted">Open 09:00–23:00 · choose a 2- or 3-hour session · book up to 14 days ahead and at least 30 minutes before the start time.</p>
     </form>
-    <h2>Rooms</h2>
+    <div class="section-heading"><div><p class="page-eyebrow">Spaces for every group</p><h2>Explore our rooms</h2></div></div>
     <div id="rooms" class="grid"></div>
   </main>
   <script type="module" src="./index.ts"></script>

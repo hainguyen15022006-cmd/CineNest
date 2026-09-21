@@ -14,13 +14,13 @@
     <div id="invoice" class="card"></div>
     <div class="row" id="actions"></div>
     <section class="card"><h2>End session early (EX01)</h2>
-      <form id="end-form" class="row"><div class="field" style="flex:1"><label for="reason">Reason</label><input id="reason" name="reason" required maxlength="300"></div><div class="field"><button type="submit" class="danger">End session early</button></div></form>
+      <form id="end-form" class="row"><div class="field flex-grow"><label for="reason">Reason</label><input id="reason" name="reason" required maxlength="300"></div><div class="field"><button type="submit" class="danger">End session early</button></div></form>
     </section>
     <section class="card"><h2>Request a discount or waiver (EX03, EX04 – manager approval required)</h2>
       <form id="adj-form" class="row">
         <div class="field"><label for="kind">Type</label><select id="kind" name="kind"><option value="REDUCE">Partial discount</option><option value="WAIVE">Full waiver</option></select></div>
         <div class="field"><label for="amountVnd">Discount amount (VND)</label><input id="amountVnd" name="amountVnd" type="number" min="1000" step="1000"></div>
-        <div class="field" style="flex:1"><label for="adjReason">Reason</label><input id="adjReason" name="reason" required maxlength="300"></div>
+        <div class="field flex-grow"><label for="adjReason">Reason</label><input id="adjReason" name="reason" required maxlength="300"></div>
         <div class="field"><button type="submit" class="secondary">Submit request</button></div>
       </form>
     </section>
