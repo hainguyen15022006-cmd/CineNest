@@ -33,6 +33,8 @@ export function mountMoviePicker(host: HTMLElement, opts: MoviePickerOptions) {
   let timer: number | undefined;
   let genresLoaded = false;
   let requestSeq = 0;
+  let pinnedSelection = false;
+  let selectionHiddenByFilter = false;
 
   host.innerHTML = `
     <div class="movie-picker">
@@ -71,8 +73,13 @@ export function mountMoviePicker(host: HTMLElement, opts: MoviePickerOptions) {
   function render(append: boolean) {
     const html = items.slice(append ? $grid.children.length : 0).map(card).join("");
     if (append) $grid.insertAdjacentHTML("beforeend", html); else $grid.innerHTML = html;
-    $count.textContent = total ? `${total} movies · showing ${items.length}` : "No matching movies";
-    $more.classList.toggle("hidden", items.length >= total);
+    const matchingShown = items.length - (pinnedSelection ? 1 : 0);
+    $count.textContent = total
+      ? `${total} matching movies · showing ${matchingShown}${pinnedSelection ? " + current selection" : ""}${selectionHiddenByFilter && selected ? ` · current selection: ${selected.title} (hidden by filters)` : ""}`
+      : selectionHiddenByFilter && selected
+        ? `No matching movies · current selection: ${selected.title} (hidden by filters)`
+        : "No matching movies";
+    $more.classList.toggle("hidden", matchingShown >= total);
     $grid.querySelectorAll<HTMLInputElement>("input[type=radio]").forEach((i) =>
       i.addEventListener("change", () => choose(items.find((m) => m.id === Number(i.value)) ?? null)),
     );
@@ -80,8 +87,15 @@ export function mountMoviePicker(host: HTMLElement, opts: MoviePickerOptions) {
   }
 
   function choose(m: Movie | null) {
+    const pinnedId = pinnedSelection ? items[0]?.id : null;
     selected = m;
     selectedId = m?.id ?? null;
+    selectionHiddenByFilter = Boolean(m && !items.some((item) => item.id === m.id));
+    if (pinnedId && pinnedId !== m?.id) {
+      items = items.filter((item) => item.id !== pinnedId);
+      pinnedSelection = false;
+    }
+    render(false);
     opts.onSelect(m);
   }
 
@@ -98,9 +112,20 @@ export function mountMoviePicker(host: HTMLElement, opts: MoviePickerOptions) {
       if (requestId !== requestSeq) return;
       page = requestedPage;
       total = res.total;
-      items = next ? items.concat(res.items) : res.items;
-      // Giữ phim đã chọn ở đầu danh sách nếu nó không thuộc trang đang xem
-      if (!next && selected && !items.some((m) => m.id === selected!.id)) items = [selected, ...items];
+      if (next) {
+        const existingIds = new Set(items.map((m) => m.id));
+        items = items.concat(res.items.filter((m) => !existingIds.has(m.id)));
+        if (selectionHiddenByFilter && selected && items.some((m) => m.id === selected!.id)) selectionHiddenByFilter = false;
+      } else {
+        items = res.items;
+        pinnedSelection = false;
+        selectionHiddenByFilter = false;
+        const explicitFilter = Boolean($q.value.trim() || $genre.value);
+        if (selected && !items.some((m) => m.id === selected!.id)) {
+          if (explicitFilter) selectionHiddenByFilter = true;
+          else { items = [selected, ...items]; pinnedSelection = true; }
+        }
+      }
       render(next);
     } catch (e) {
       if (requestId !== requestSeq) return;
