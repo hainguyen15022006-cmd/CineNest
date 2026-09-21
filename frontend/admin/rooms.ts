@@ -11,8 +11,11 @@ const split = (s: unknown) => String(s ?? "").split(",").map((x) => x.trim()).fi
 mountCrud<Room>({
   listUrl: "/api/admin/rooms", createUrl: "/api/admin/rooms", updateUrl: (id) => `/api/admin/rooms/${id}`, formSel: "#room-form", listSel: "#list",
   columns: [
-    { title: "Room", render: (r) => escapeHtml(r.name) }, { title: "Capacity", render: (r) => String(r.capacity) },
-    { title: "Hourly rate", render: (r) => money(r.hourlyPriceVnd) }, { title: "Status", render: (r) => badge(r.isActive ? "READY" : "CANCELLED").replace("Ready", "Active").replace("Cancelled", "Closed") },
+    { title: "Room", render: (r) => escapeHtml(r.name) },
+    { title: "Capacity", render: (r) => `${r.capacity} guests` },
+    { title: "Hourly rate", render: (r) => money(r.hourlyPriceVnd) },
+    { title: "Amenities", render: (r) => (Array.isArray(r.amenities) && r.amenities.length ? r.amenities.map(escapeHtml).slice(0, 2).join(", ") + (r.amenities.length > 2 ? "…" : "") : "—") },
+    { title: "Status", render: (r) => badge(r.isActive ? "READY" : "CANCELLED").replace("Ready", "Active").replace("Cancelled", "Closed") },
   ],
   toBody: (f) => ({ name: f.name, capacity: Number(f.capacity), hourlyPriceVnd: Number(f.hourlyPriceVnd), isActive: f.isActive === "true", description: String(f.description ?? ""), amenities: split(f.amenities), images: split(f.images) }),
   fillForm: (form, r) => {

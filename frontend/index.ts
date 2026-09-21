@@ -41,7 +41,10 @@ try {
         ${r.images?.[0] ? `<img src="${escapeHtml(r.images[0].url)}" alt="${escapeHtml(r.name)}" width="800" height="500" decoding="async" ${index === 0 ? 'fetchpriority="high"' : 'loading="lazy"'} style="width:100%;height:auto;border-radius:8px;aspect-ratio:16/10;object-fit:cover">` : ""}
         <h3 style="margin:8px 0 4px">${escapeHtml(r.name)}</h3>
         <p class="muted">Up to ${r.capacity} guests · ${money(r.hourlyPriceVnd)}/hour</p>
-        <a class="btn small secondary" href="./room.html?id=${r.id}">View details</a>
+        ${Array.isArray(r.amenities) && r.amenities.length ? `<div style="display:flex;gap:4px;flex-wrap:wrap;margin:6px 0">${r.amenities.slice(0, 3).map((a) => `<span class="badge">${escapeHtml(a)}</span>`).join("")}</div>` : ""}
+        <div style="margin-top:8px">
+          <a class="btn small secondary" href="./room.html?id=${r.id}">View details</a>
+        </div>
       </article>`).join("")
     : "";
   if (!rooms.length) setState(roomsBox, "empty", "No rooms are available");

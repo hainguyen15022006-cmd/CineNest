@@ -1,6 +1,6 @@
 # CineNest integration review
 
-Review date: 20 September 2026  
+Review date: 21 September 2026  
 Integration branch: `codex/integrate-team-final`
 
 ## Integrated contributions
@@ -8,13 +8,13 @@ Integration branch: `codex/integrate-team-final`
 | Owner | Remote branch | Review result |
 | --- | --- | --- |
 | Dương — authentication and integration | `origin/feat/auth` | Integrated. Login/session, role protection, staff-account management and lockout flows compile and pass automated tests. Database not-found errors are now returned as 404 instead of 500. |
-| Chúc — rooms and availability | No remote feature branch found | The shared foundation implementation remains in use. Capacity is consistently limited to 2–6 guests. Closing a room and creating a booking are now serialized so both operations cannot incorrectly succeed at the same time. |
+| Chúc — rooms and availability | `origin/feat/rooms-optimization-and-ui` | Integrated after reconciling the six-guest limit and transaction locking. Availability now uses an index-compatible status predicate, room detail/search/admin interfaces are improved, inactive-room admin detail is supported, and ten dedicated room tests pass. |
 | Hải Anh — booking | `origin/feat/bookings` | Integrated. Customer and staff booking flows, cleaning buffer, duplicate prevention, idempotency, three-active-booking limit, check-in grace period and lifecycle actions pass tests. |
 | Thành Lê — movies and performance | `origin/feat/movies-performance` | Movie catalogue/import and movie preparation are integrated. Concurrency protection was added for movie selection, deactivation and preparation changes. Performance scripts exist, but the evidence package is incomplete; see Remaining submission work. |
 | Sơn — menu and food orders | `origin/feat/menu` | Integrated. Pre-order, add-on orders, price snapshots and service states work. Locks now prevent a food order from being added during checkout and keep menu price/availability validation consistent. |
 | Công Thành — payment, exceptions and reports | `origin/thanh/feature-payments-reports` | Integrated after corrections. Duplicate routes/services and unsupported methods were removed. Checkout supports CASH/TRANSFER, approved adjustments, explicit full collection while an adjustment is pending, and Vietnamese-timezone reports. |
 
-All five available remote feature tips are ancestors of this integration branch. No remote branch from Chúc was present during the review.
+All six member feature branches are integrated into this branch. Chúc's room contribution was merged on 21 September and reconciled with the earlier cross-module concurrency fixes.
 
 ## Corrections made during integration
 
@@ -32,7 +32,7 @@ All five available remote feature tips are ancestors of this integration branch.
 
 ## Verification result
 
-- Backend automated tests: **54 passed** across authentication, booking, rooms, movies, menu and checkout/report suites.
+- Backend automated tests: **64 passed** across authentication, booking, rooms, movies, menu and checkout/report suites.
 - Browser integration tests: **2 passed**: the customer four-step booking flow and the full customer-to-staff invoice flow.
 - Backend and frontend TypeScript checks: passed.
 - Frontend production build: passed; all configured pages were generated.
@@ -57,6 +57,5 @@ These items do not block the application from running, but they are not yet suff
 3. Run Lighthouse five times on the home, room-results and room-detail pages, then report the median for each page. The repository currently contains one home-page before/after JSON pair.
 4. Add the final deployed URL, ERD/database diagram, group presentation slides and demo/backup instructions. The repository currently contains only the movies/performance member slide deck.
 5. `npm audit --omit=dev` currently reports four high-severity advisories through Prisma tooling dependencies. Do not run `npm audit fix --force`, because its proposed major downgrade can break the Prisma 7 project. Record this as a known toolchain issue and reassess against a compatible Prisma update before submission.
-6. Ask Chúc to review and demonstrate the room module or contribute a small traceable commit, because no branch for member 2 exists on GitHub.
 
 The current code is a stable integration candidate. It should be treated as feature-frozen while the team completes the evidence and presentation items above.

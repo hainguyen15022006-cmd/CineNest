@@ -32,7 +32,7 @@ Thời gian: gửi lên `date` (YYYY-MM-DD) + `startTime` (HH:mm) theo giờ Vi�
 | `POST /staff/bookings/:id/end-early` `{reason}` | STAFF | Công Thành | EX01 + EX02 |
 | `POST /staff/bookings/:id/adjustments` `{kind,amountVnd?,reason}` | STAFF | Công Thành | chờ duyệt; WAIVE tự lấy Tổng gốc |
 | `GET /admin/staff` · `POST /admin/staff` · `PATCH /admin/staff/:id/active` `{isActive}` | MANAGER | Dương | khóa ⇒ xóa mọi phiên |
-| `GET/POST /admin/rooms` · `PATCH /admin/rooms/:id` | MANAGER | Chúc | BR06, BR08 |
+| `GET/POST /admin/rooms` · `GET/PATCH /admin/rooms/:id` | MANAGER | Chúc | BR06, BR08; manager detail includes inactive rooms |
 | `GET/POST /admin/movies` · `PATCH /admin/movies/:id` | MANAGER | Thành Lê | MOV07; GET cùng tham số `q/genre/page/limit`, gồm cả phim ngừng phục vụ |
 | `GET/POST /admin/menu-items` · `PATCH /admin/menu-items/:id` | MANAGER | Sơn | |
 | `GET /admin/adjustments` · `POST /admin/adjustments/:id/approve|reject` `{note?}` | MANAGER | Công Thành | WAIVE duyệt ⇒ `payment_status = WAIVED` |

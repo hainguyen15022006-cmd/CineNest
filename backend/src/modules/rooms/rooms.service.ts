@@ -21,9 +21,11 @@ export function listRooms(includeInactive = false) {
   return prisma.room.findMany({ where: includeInactive ? {} : { isActive: true }, select: roomSelect, orderBy: { id: "asc" } });
 }
 
-export async function getRoom(id: number) {
+export async function getRoom(id: number, includeInactive = false) {
   const room = await prisma.room.findUnique({ where: { id }, select: roomSelect });
-  if (!room || !room.isActive) throw ApiError.notFound("ROOM_NOT_FOUND", "Không tìm thấy phòng");
+  if (!room || (!includeInactive && !room.isActive)) {
+    throw ApiError.notFound("ROOM_NOT_FOUND", "Không tìm thấy phòng");
+  }
   return room;
 }
 
@@ -33,9 +35,11 @@ export type AvailabilityQuery = { date: string; startTime: string; duration: num
  * Tìm phòng trống cho một khung giờ (GET /api/rooms/availability – API được đo ở PF01).
  * Dùng ĐÚNG quy tắc giao nhau của lớp 2: tstzrange(start_at, occupied_until, '[)') && khoảng yêu cầu,
  * nên kết quả tìm phòng và kết quả tạo booking không bao giờ khác nhau.
+ * Khớp chính xác mệnh đề WHERE của Partial GiST Index `booking_no_overlap` để kích hoạt Index Scan.
  */
 export async function findAvailableRooms(q: AvailabilityQuery) {
   const win = validateSlot(q.date, q.startTime, q.duration, { source: "ONLINE" });
+  const holdingList = HOLDING_STATUSES.map((s) => `'${s}'`).join(","); // Nội suy trực tiếp từ HOLDING_STATUSES (hằng số cố định, không phải input người dùng)
   const { rows } = await pool.query<{
     id: number; name: string; capacity: number; description: string; amenities: unknown; hourly_price_vnd: number; cover: string | null;
   }>(
@@ -47,11 +51,11 @@ export async function findAvailableRooms(q: AvailabilityQuery) {
        AND NOT EXISTS (
          SELECT 1 FROM "booking" b
          WHERE b."room_id" = r."id"
-           AND b."status"::text = ANY($4::text[])
+           AND b."status" IN (${holdingList})
            AND tstzrange(b."start_at", b."occupied_until", '[)') && tstzrange($1::timestamptz, $2::timestamptz, '[)')
        )
      ORDER BY r."hourly_price_vnd", r."id"`,
-    [win.startAt, win.occupiedUntil, q.guests, [...HOLDING_STATUSES]],
+    [win.startAt, win.occupiedUntil, q.guests],
   );
   return {
     window: win,
@@ -97,12 +101,13 @@ export function createRoom(input: RoomInput) {
 
 export async function updateRoom(id: number, input: Partial<RoomInput>) {
   return prisma.$transaction(async (tx) => {
-    // Cùng khóa với createBooking: không thể đóng phòng sau bước kiểm tra nhưng trước khi booking được tạo.
-    const [room] = await tx.$queryRaw<{ id: number }[]>`
-      SELECT "id" FROM "room" WHERE "id" = ${id} FOR UPDATE`;
+    // Use the same room lock as createBooking so a room cannot be deactivated
+    // between availability validation and booking creation.
+    const [room] = await tx.$queryRaw<{ id: number; is_active: boolean }[]>`
+      SELECT "id", "is_active" FROM "room" WHERE "id" = ${id} FOR UPDATE`;
     if (!room) throw ApiError.notFound("ROOM_NOT_FOUND", "Không tìm thấy phòng");
-    if (input.isActive === false) {
-      // BR06: không đóng phòng khi còn booking xác nhận hoặc đang sử dụng
+    if (input.isActive === false && room.is_active) {
+      // BR06: do not deactivate a room with a confirmed or in-use booking.
       const active = await tx.booking.count({ where: { roomId: id, status: { in: ["CONFIRMED", "IN_USE"] } } });
       if (active > 0) throw ApiError.unprocessable("ROOM_HAS_BOOKINGS", "Phòng còn booking đang hiệu lực, hãy xử lý trước khi đóng");
     }
@@ -113,7 +118,7 @@ export async function updateRoom(id: number, input: Partial<RoomInput>) {
         ...(input.capacity !== undefined && { capacity: input.capacity }),
         ...(input.description !== undefined && { description: input.description }),
         ...(input.amenities !== undefined && { amenities: input.amenities }),
-        ...(input.hourlyPriceVnd !== undefined && { hourlyPriceVnd: input.hourlyPriceVnd }), // BR08: giá mới chỉ áp dụng cho booking tạo sau
+        ...(input.hourlyPriceVnd !== undefined && { hourlyPriceVnd: input.hourlyPriceVnd }), // BR08: only new bookings use the new price.
         ...(input.isActive !== undefined && { isActive: input.isActive }),
         ...(input.images !== undefined && {
           images: { deleteMany: {}, create: input.images.map((url, i) => ({ url, sortOrder: i })) },
