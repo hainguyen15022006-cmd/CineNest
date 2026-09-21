@@ -168,12 +168,15 @@ async function main() {
   // Ưu tiên phim nhiều lượt đánh giá; ID nguồn là khóa chính, tên + thời lượng là khóa dự phòng cho CSV không có ID.
   rows.sort((a, b) => (b.votes ?? 0) - (a.votes ?? 0));
   const fallbackKey = (t: string, d: number) => `${t.toLowerCase().replace(/\s+/g, " ").trim()}|${d}`;
-  const fileKnown = new Set<string>();
+  const fileKnownSource = new Set<string>();
+  const fileKnownFallback = new Set<string>();
   const fileUnique: MovieRow[] = [];
   for (const row of rows) {
-    const key = row.externalId ? `${row.source}:${row.externalId}` : fallbackKey(row.title, row.durationMinutes);
-    if (fileKnown.has(key)) { skipped++; continue; }
-    fileKnown.add(key);
+    const sourceKey = row.externalId ? `${row.source}:${row.externalId}` : null;
+    const titleRuntimeKey = fallbackKey(row.title, row.durationMinutes);
+    if ((sourceKey && fileKnownSource.has(sourceKey)) || fileKnownFallback.has(titleRuntimeKey)) { skipped++; continue; }
+    if (sourceKey) fileKnownSource.add(sourceKey);
+    fileKnownFallback.add(titleRuntimeKey);
     fileUnique.push(row);
   }
   if (DRY_RUN) {
@@ -183,14 +186,17 @@ async function main() {
   }
 
   const existing = await prisma.movie.findMany({ select: { source: true, externalId: true, title: true, durationMinutes: true } });
-  const known = new Set(existing.map((e) => e.externalId && e.source ? `${e.source}:${e.externalId}` : fallbackKey(e.title, e.durationMinutes)));
+  const knownSource = new Set(existing.flatMap((e) => e.externalId && e.source ? [`${e.source}:${e.externalId}`] : []));
+  const knownFallback = new Set(existing.map((e) => fallbackKey(e.title, e.durationMinutes)));
   const unique: MovieRow[] = [];
   // LIMIT xác định cùng một tập top N của file ở mọi lần chạy. Nếu chỉ dừng sau N
   // bản ghi *mới*, lần chạy thứ hai sẽ nhập tiếp phần đuôi và không còn tái lập được.
   for (const r of fileUnique.slice(0, LIMIT)) {
-    const k = r.externalId ? `${r.source}:${r.externalId}` : fallbackKey(r.title, r.durationMinutes);
-    if (known.has(k)) { skipped++; continue; }
-    known.add(k);
+    const sourceKey = r.externalId ? `${r.source}:${r.externalId}` : null;
+    const titleRuntimeKey = fallbackKey(r.title, r.durationMinutes);
+    if ((sourceKey && knownSource.has(sourceKey)) || knownFallback.has(titleRuntimeKey)) { skipped++; continue; }
+    if (sourceKey) knownSource.add(sourceKey);
+    knownFallback.add(titleRuntimeKey);
     unique.push(r);
   }
 
