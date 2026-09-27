@@ -37,19 +37,19 @@ async function main() {
 
   console.log("Phòng...");
   const roomDefs = [
-    { name: "Room 101 – Classic", capacity: 2, price: 89_000, amenities: ["120-inch projector", "Soundbar", "Air conditioning", "Two-seat sofa"] },
-    { name: "Room 102 – Classic", capacity: 2, price: 89_000, amenities: ["120-inch projector", "Soundbar", "Air conditioning", "Two-seat sofa"] },
-    { name: "Room 103 – Classic", capacity: 2, price: 89_000, amenities: ["120-inch projector", "Soundbar", "Air conditioning", "Floor seating"] },
-    { name: "Room 201 – Queen", capacity: 3, price: 99_000, amenities: ["Air purifier", "150-inch projector", "2.1 sound system", "Premium sofa", "Private restroom", "Mini fridge"] },
-    { name: "Room 202 – Queen", capacity: 3, price: 99_000, amenities: ["Air purifier", "150-inch projector", "2.1 sound system", "Premium sofa", "Private restroom", "Mini fridge"] },
-    { name: "Room 203 – Queen", capacity: 3, price: 99_000, amenities: ["Air purifier", "150-inch projector", "2.1 sound system", "Premium sofa", "Private restroom", "Ambient lighting"] },
-    { name: "Room 301 – King", capacity: 4, price: 109_000, amenities: ["Air purifier", "4K laser projector", "5.1 surround sound", "Reclining sofa", "Private restroom", "Acoustic treatment", "Wireless charger"] },
-    { name: "Room 302 – King", capacity: 4, price: 109_000, amenities: ["Air purifier", "4K laser projector", "5.1 surround sound", "Reclining sofa", "Private restroom", "Acoustic treatment", "Wireless charger"] },
-    { name: "Room 401 – Group", capacity: 6, price: 139_000, amenities: ["Air purifier", "4K 200-inch projector", "7.1 surround sound", "Two premium sofas", "Large table", "Ambient lighting", "Game console", "Wireless chargers"] },
-    { name: "Room 402 – Group", capacity: 6, price: 139_000, amenities: ["Air purifier", "4K 200-inch projector", "7.1 surround sound", "Two premium sofas", "Large table", "Ambient lighting", "Karaoke microphones", "Wireless chargers"] },
+    { name: "Room 101 – Classic", capacity: 2, price: 89_000, image: "https://blog.dktcdn.net/files/cafe-phim-1.jpg", amenities: ["120-inch projector", "Soundbar", "Air conditioning", "Two-seat sofa"] },
+    { name: "Room 102 – Classic", capacity: 2, price: 89_000, image: "https://down-vn.img.susercontent.com/vn-11134259-7r98o-lwwokehuptcp02", amenities: ["120-inch projector", "Soundbar", "Air conditioning", "Two-seat sofa"] },
+    { name: "Room 103 – Classic", capacity: 2, price: 89_000, image: "https://blog.dktcdn.net/files/cafe-phim-6.jpg", amenities: ["120-inch projector", "Soundbar", "Air conditioning", "Floor seating"] },
+    { name: "Room 201 – Queen", capacity: 3, price: 99_000, image: "https://leuvit.com/wp-content/uploads/2023/07/Leu-Vit-Homestay-Diem-danh-dia-chi-cafe-phim-Hai-Phong-duoc-gioi-tre-yeu-thich-nhat-3.jpg", amenities: ["Air purifier", "150-inch projector", "2.1 sound system", "Premium sofa", "Private restroom", "Mini fridge"] },
+    { name: "Room 202 – Queen", capacity: 3, price: 99_000, image: "https://cdn.xanhsm.com/2024/12/8cb7f72c-cafe-film-3d-box-7.jpg", amenities: ["Air purifier", "150-inch projector", "2.1 sound system", "Premium sofa", "Private restroom", "Mini fridge"] },
+    { name: "Room 203 – Queen", capacity: 3, price: 99_000, image: "https://www.cukcuk.vn/wp-content/uploads/2023/06/mo-hinh-cafe-phim.png", amenities: ["Air purifier", "150-inch projector", "2.1 sound system", "Premium sofa", "Private restroom", "Ambient lighting"] },
+    { name: "Room 301 – King", capacity: 4, price: 109_000, image: "https://cdn.xanhsm.com/2024/12/ac7991f9-cafe-phim-cau-giay-thumb.jpeg", amenities: ["Air purifier", "4K laser projector", "5.1 surround sound", "Reclining sofa", "Private restroom", "Acoustic treatment", "Wireless charger"] },
+    { name: "Room 302 – King", capacity: 4, price: 109_000, image: "https://roomstyle.decorexpro.com/wp-content/uploads/2018/02/dizajn-domashnego-kinoteatra-13.jpg", amenities: ["Air purifier", "4K laser projector", "5.1 surround sound", "Reclining sofa", "Private restroom", "Acoustic treatment", "Wireless charger"] },
+    { name: "Room 401 – Group", capacity: 6, price: 139_000, image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRjSpQy2fzzEqF89SRwwJOIxEIIrx-gp7u-TwmQNSHr8BeFTnsZqDO14qN5&s=10", amenities: ["Air purifier", "4K 200-inch projector", "7.1 surround sound", "Two premium sofas", "Large table", "Ambient lighting", "Game console", "Wireless chargers"] },
+    { name: "Room 402 – Group", capacity: 6, price: 139_000, image: "https://anhtaiaudio.com.vn/wp-content/uploads/2021/05/chieu-phim-tai-gia-7-1.jpg", amenities: ["Air purifier", "4K 200-inch projector", "7.1 surround sound", "Two premium sofas", "Large table", "Ambient lighting", "Karaoke microphones", "Wireless chargers"] },
   ];
   const rooms = [];
-  for (const [i, r] of roomDefs.entries()) {
+  for (const r of roomDefs) {
     rooms.push(
       await prisma.room.create({
         data: {
@@ -58,7 +58,7 @@ async function main() {
           hourlyPriceVnd: r.price,
           amenities: r.amenities,
           description: `Private room for up to ${r.capacity} guests, with a private key and no cameras.`,
-          images: { create: [{ url: `https://picsum.photos/seed/room${i + 1}/800/500`, sortOrder: 0 }, { url: `https://picsum.photos/seed/room${i + 1}b/800/500`, sortOrder: 1 }] },
+          images: { create: [{ url: r.image, sortOrder: 0 }] },
         },
       }),
     );
