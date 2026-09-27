@@ -31,6 +31,19 @@ npm run dev                                # API http://localhost:3000/api  +  w
 
 Tài khoản demo: `khach@demo.local / Khach#123` · `staff@demo.local / Staff#1234` · `manager@demo.local / Manager#123`.
 
+### Sau khi pull code mới từ GitHub
+
+Mỗi thành viên chạy migration để nhận các thay đổi mới của database, bao gồm bộ ảnh phòng dùng chung:
+
+```bash
+git pull
+npm ci
+npm run db:migrate --workspace backend
+npm run dev
+```
+
+`db:migrate` chỉ áp dụng các migration còn thiếu và **không xóa booking, tài khoản, phim hay dữ liệu đang có**. Không chạy `db:seed` sau mỗi lần pull vì seed sẽ xóa dữ liệu phát triển hiện tại rồi tạo lại dữ liệu mẫu. Chỉ dùng `db:seed` khi tạo database mới hoặc khi chủ động muốn đặt lại toàn bộ dữ liệu demo.
+
 Kiểm thử tự động (CSDL riêng `moviecafe_test`, không phá dữ liệu dev):
 ```bash
 cp backend/.env.test.example backend/.env.test
