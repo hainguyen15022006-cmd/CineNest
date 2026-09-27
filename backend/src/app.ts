@@ -31,7 +31,7 @@ export function createApp() {
       ? {
           directives: {
             ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-            "img-src": ["'self'", "data:", "https://image.tmdb.org", "https://picsum.photos", "https://fastly.picsum.photos"],
+            "img-src": ["'self'", "data:", "https:"],
           },
         }
       : false,

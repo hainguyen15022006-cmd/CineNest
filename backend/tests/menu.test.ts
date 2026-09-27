@@ -128,7 +128,33 @@ describe("Module 5 - menu and pre-orders", () => {
       code: "INVALID_QUANTITY",
     });
   });
+  it("rejects duplicate menu items in the same order", async () => {
+    const item = await prisma.menuItem.create({
+      data: {
+        name: `Duplicate-${uid()}`,
+        category: "SNACK",
+        priceVnd: 35_000,
+        isActive: true,
+      },
+    });
 
+    await expect(
+      prisma.$transaction((tx) =>
+        buildPreorder(tx, [
+          {
+            menuItemId: item.id,
+            quantity: 1,
+          },
+          {
+            menuItemId: item.id,
+            quantity: 2,
+          },
+        ]),
+      ),
+    ).rejects.toMatchObject({
+      code: "DUPLICATE_MENU_ITEM",
+    });
+  });
   it("rejects an inactive menu item", async () => {
     const item = await prisma.menuItem.create({
       data: {
@@ -355,6 +381,15 @@ describe("Module 5 - menu and pre-orders", () => {
 
     const forbidden = await staff.agent.get("/api/admin/menu-items");
     expect(forbidden.status).toBe(403);
+    const insecureImage = await manager.agent.post("/api/admin/menu-items").send({
+      name: `Insecure-image-${uid()}`,
+      category: "DRINK",
+      imageUrl: "http://example.com/image.jpg",
+      priceVnd: 30_000,
+      isActive: true,
+    });
+
+    expect(insecureImage.status).toBe(422);
 
     const created = await manager.agent.post("/api/admin/menu-items").send({
       name: itemName,

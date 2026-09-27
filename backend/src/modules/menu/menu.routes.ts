@@ -17,7 +17,15 @@ export const adminMenuRouter = Router();
 const menuInput = z.object({
   name: z.string().trim().min(1).max(100),
   category: z.enum(["DRINK", "SNACK", "FOOD"]),
-  imageUrl: z.string().url().max(500).nullable().optional(),
+  imageUrl: z
+    .url()
+    .max(500)
+    .refine(
+      (value) => new URL(value).protocol === "https:",
+      "Image URL must use HTTPS",
+    )
+    .nullable()
+    .optional(),
   priceVnd: z.number().int().min(0),
   isActive: z.boolean().optional(),
 });
