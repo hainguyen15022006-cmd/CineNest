@@ -18,7 +18,7 @@
         <div class="field"><label for="priceVnd">Price (VND)</label><input id="priceVnd" name="priceVnd" type="number" min="0" step="1000" required></div>
         <div class="field"><label for="isActive">Available for sale</label><select id="isActive" name="isActive"><option value="true">Yes</option><option value="false">No</option></select></div>
       </div>
-      <div class="field"><label for="imageUrl">Image URL</label><input id="imageUrl" name="imageUrl"></div>
+      <div class="field"><label for="imageUrl">Image URL or local path</label><input id="imageUrl" name="imageUrl" type="text" pattern="https://.*|/images/menu/[A-Za-z0-9._-]+" placeholder="https://example.com/image.jpg or /images/menu/item.jpg"></div>
       <div class="row"><button type="submit">Save</button><button type="button" class="secondary" id="btn-reset">New</button></div>
     </form>
     <div id="list" class="table-wrap"></div>

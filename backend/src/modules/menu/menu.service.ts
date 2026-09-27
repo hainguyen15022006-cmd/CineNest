@@ -29,7 +29,16 @@ export async function buildPreorder(
   items: { menuItemId: number; quantity: number }[],
 ): Promise<{ lines: PreorderLine[]; totalVnd: number }> {
   if (items.length === 0) return { lines: [], totalVnd: 0 };
-  const ids = [...new Set(items.map((i) => i.menuItemId))].sort((a, b) => a - b);
+
+  const requestedIds = items.map((item) => item.menuItemId);
+  if (new Set(requestedIds).size !== requestedIds.length) {
+    throw ApiError.unprocessable(
+      "DUPLICATE_MENU_ITEM",
+      "Each menu item may only appear once per order",
+    );
+  }
+
+  const ids = [...requestedIds].sort((a, b) => a - b);
   // Giữ danh mục ổn định đến lúc transaction tạo booking/order hoàn tất.
   // Khóa theo thứ tự id cố định để tránh deadlock khi nhiều đơn chọn cùng món.
   for (const id of ids) {

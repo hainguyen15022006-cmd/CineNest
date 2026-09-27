@@ -54,6 +54,7 @@ const ERROR_MESSAGE: Record<string, string> = {
   MOVIE_LOCKED: "The movie can only be changed before the session starts.",
   MOVIE_CHANGED: "The movie selection changed. Please reload and try again.",
   MENU_ITEM_UNAVAILABLE: "A selected menu item is no longer available.",
+  DUPLICATE_MENU_ITEM: "Each menu item may only appear once per order.",
   INVALID_QUANTITY: "Each item quantity must be between 1 and 20.",
   EMPTY_ORDER: "Add at least one item to the order.",
   ORDER_NOT_FOUND: "The food order was not found.",

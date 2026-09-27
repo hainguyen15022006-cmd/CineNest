@@ -14,10 +14,22 @@ export const menuRouter = Router();
 menuRouter.get("/", async (_req, res) => ok(res, await svc.listMenu()));
 
 export const adminMenuRouter = Router();
+const localMenuImage = /^\/images\/menu\/[a-z0-9][a-z0-9._-]*\.(?:avif|jpe?g|png|webp)$/i;
+const isAllowedMenuImage = (value: string) => {
+  if (localMenuImage.test(value)) return true;
+  try {
+    return new URL(value).protocol === "https:";
+  } catch {
+    return false;
+  }
+};
 const menuInput = z.object({
   name: z.string().trim().min(1).max(100),
   category: z.enum(["DRINK", "SNACK", "FOOD"]),
-  imageUrl: z.string().url().max(500).nullable().optional(),
+  imageUrl: z.string().trim().max(500).refine(
+    isAllowedMenuImage,
+    "Image must use HTTPS or a safe /images/menu/ path",
+  ).nullable().optional(),
   priceVnd: z.number().int().min(0),
   isActive: z.boolean().optional(),
 });

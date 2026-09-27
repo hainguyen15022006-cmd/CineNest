@@ -128,7 +128,33 @@ describe("Module 5 - menu and pre-orders", () => {
       code: "INVALID_QUANTITY",
     });
   });
+  it("rejects duplicate menu items in the same order", async () => {
+    const item = await prisma.menuItem.create({
+      data: {
+        name: `Duplicate-${uid()}`,
+        category: "SNACK",
+        priceVnd: 35_000,
+        isActive: true,
+      },
+    });
 
+    await expect(
+      prisma.$transaction((tx) =>
+        buildPreorder(tx, [
+          {
+            menuItemId: item.id,
+            quantity: 1,
+          },
+          {
+            menuItemId: item.id,
+            quantity: 2,
+          },
+        ]),
+      ),
+    ).rejects.toMatchObject({
+      code: "DUPLICATE_MENU_ITEM",
+    });
+  });
   it("rejects an inactive menu item", async () => {
     const item = await prisma.menuItem.create({
       data: {
@@ -355,11 +381,20 @@ describe("Module 5 - menu and pre-orders", () => {
 
     const forbidden = await staff.agent.get("/api/admin/menu-items");
     expect(forbidden.status).toBe(403);
+    const insecureImage = await manager.agent.post("/api/admin/menu-items").send({
+      name: `Insecure-image-${uid()}`,
+      category: "DRINK",
+      imageUrl: "http://example.com/image.jpg",
+      priceVnd: 30_000,
+      isActive: true,
+    });
+
+    expect(insecureImage.status).toBe(422);
 
     const created = await manager.agent.post("/api/admin/menu-items").send({
       name: itemName,
       category: "DRINK",
-      imageUrl: null,
+      imageUrl: "/images/menu/hot-cocoa.jpg",
       priceVnd: 42_000,
       isActive: true,
     });
@@ -367,6 +402,7 @@ describe("Module 5 - menu and pre-orders", () => {
     expect(created.status).toBe(201);
     expect(created.body.data).toMatchObject({
       name: itemName,
+      imageUrl: "/images/menu/hot-cocoa.jpg",
       priceVnd: 42_000,
       isActive: true,
     });
@@ -375,6 +411,7 @@ describe("Module 5 - menu and pre-orders", () => {
     expect(publicBefore.body.data.some((item: { id: number }) => item.id === created.body.data.id)).toBe(true);
 
     const updated = await manager.agent.patch(`/api/admin/menu-items/${created.body.data.id}`).send({
+      imageUrl: "/images/menu/hot-cocoa.jpg",
       priceVnd: 45_000,
       isActive: false,
     });
@@ -382,6 +419,7 @@ describe("Module 5 - menu and pre-orders", () => {
     expect(updated.status).toBe(200);
     expect(updated.body.data).toMatchObject({
       id: created.body.data.id,
+      imageUrl: "/images/menu/hot-cocoa.jpg",
       priceVnd: 45_000,
       isActive: false,
     });

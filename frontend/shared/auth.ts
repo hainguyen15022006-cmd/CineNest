@@ -35,6 +35,10 @@ export function safeNextPath(raw: string | null): string | null {
   try {
     const target = new URL(raw, location.origin);
     if (target.origin !== location.origin) return null;
+    // Never return to an authentication page after a successful login. A failed
+    // login used to produce `?next=/login.html`, so the next successful attempt
+    // appeared to refresh the form even though the session had been created.
+    if (/\/(?:login|register)\.html$/.test(target.pathname)) return null;
     return `${target.pathname}${target.search}${target.hash}`;
   } catch {
     return null;
