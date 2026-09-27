@@ -1,6 +1,6 @@
 # CineNest integration review
 
-Review date: 21 September 2026  
+Review date: 21 September 2026
 Integration branch: `codex/integrate-team-final`
 
 ## Integrated contributions

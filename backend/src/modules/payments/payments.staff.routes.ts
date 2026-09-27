@@ -18,7 +18,7 @@ paymentsStaffRouter.get("/bookings/:id/invoice", async (req, res) => {
 paymentsStaffRouter.post("/bookings/:id/checkout", async (req, res) => {
   const key = getIdempotencyKey(req);
   const id = parse(idParam, req.params.id);
-  
+
   // Validate payment method against DB Schema
   const { method, collectFullAmount } = parse(
     z.object({

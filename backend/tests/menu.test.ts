@@ -394,7 +394,7 @@ describe("Module 5 - menu and pre-orders", () => {
     const created = await manager.agent.post("/api/admin/menu-items").send({
       name: itemName,
       category: "DRINK",
-      imageUrl: null,
+      imageUrl: "/images/menu/hot-cocoa.jpg",
       priceVnd: 42_000,
       isActive: true,
     });
@@ -402,6 +402,7 @@ describe("Module 5 - menu and pre-orders", () => {
     expect(created.status).toBe(201);
     expect(created.body.data).toMatchObject({
       name: itemName,
+      imageUrl: "/images/menu/hot-cocoa.jpg",
       priceVnd: 42_000,
       isActive: true,
     });
@@ -410,6 +411,7 @@ describe("Module 5 - menu and pre-orders", () => {
     expect(publicBefore.body.data.some((item: { id: number }) => item.id === created.body.data.id)).toBe(true);
 
     const updated = await manager.agent.patch(`/api/admin/menu-items/${created.body.data.id}`).send({
+      imageUrl: "/images/menu/hot-cocoa.jpg",
       priceVnd: 45_000,
       isActive: false,
     });
@@ -417,6 +419,7 @@ describe("Module 5 - menu and pre-orders", () => {
     expect(updated.status).toBe(200);
     expect(updated.body.data).toMatchObject({
       id: created.body.data.id,
+      imageUrl: "/images/menu/hot-cocoa.jpg",
       priceVnd: 45_000,
       isActive: false,
     });
