@@ -148,11 +148,66 @@ async function main() {
     ["Chicken skewers", "SNACK", 65_000], ["Fried fermented pork rolls", "SNACK", 55_000], ["Grilled sausage", "SNACK", 50_000], ["Mini pizza", "FOOD", 65_000],
     ["Beef spaghetti", "FOOD", 65_000], ["Grilled beef baguette", "FOOD", 50_000], ["Popcorn + 2 drinks combo", "SNACK", 99_000],
   ];
-  const menu: { id: number; name: string; priceVnd: number }[] = [];
-  for (const [i, [name, category, price]] of menuDefs.entries()) {
-    menu.push(await prisma.menuItem.create({ data: { name, category, priceVnd: price, imageUrl: `https://picsum.photos/seed/menu${i + 1}/300/200` } }));
-  }
+  const menuImageByName: Record<string, string> = {
+    "Peach orange lemongrass tea":
+      "/images/menu/peach-orange-lemongrass-tea.jpg",
 
+    "Pearl milk tea":
+      "/images/menu/pearl-milk-tea.jpg",
+
+    "Vietnamese iced coffee":
+      "/images/menu/vietnamese-iced-coffee.jpg",
+
+    "Hot cocoa":
+      "/images/menu/hot-cocoa.jpg",
+
+    "Orange juice":
+      "/images/menu/orange-juice.jpg",
+
+    "Blueberry soda":
+      "/images/menu/blueberry-soda.jpg",
+
+    "Butter popcorn":
+      "/images/menu/butter-popcorn.jpg",
+
+    "French fries":
+      "/images/menu/french-fries.jpg",
+
+    "Chicken skewers":
+      "/images/menu/chicken-skewers.jpg",
+
+    "Fried fermented pork rolls":
+      "/images/menu/fried-fermented-pork-rolls.jpg",
+
+    "Grilled sausage":
+      "/images/menu/grilled-sausage.jpg",
+
+    "Mini pizza":
+      "/images/menu/mini-pizza.jpg",
+
+    "Beef spaghetti":
+      "/images/menu/beef-spaghetti.jpg",
+
+    "Grilled beef baguette":
+      "/images/menu/grilled-beef-baguette.jpg",
+
+    "Popcorn + 2 drinks combo":
+      "/images/menu/popcorn-two-drinks-combo.jpg",
+  };
+  const menu: { id: number; name: string; priceVnd: number }[] = [];
+
+  for (const [name, category, price] of menuDefs) {
+    menu.push(
+      await prisma.menuItem.create({
+        data: {
+          name,
+          category,
+          priceVnd: price,
+          imageUrl: menuImageByName[name]!,
+        },
+      }),
+    );
+  }
   console.log("Booking mẫu ở đủ trạng thái...");
   const today = todayVn();
   const now = new Date();
