@@ -33,7 +33,7 @@ Tài khoản demo: `khach@demo.local / Khach#123` · `staff@demo.local / Staff#1
 
 ### Sau khi pull code mới từ GitHub
 
-Mỗi thành viên chạy migration để nhận các thay đổi mới của database, bao gồm bộ ảnh phòng dùng chung:
+Mỗi thành viên chạy migration để nhận các thay đổi mới của database, bao gồm bộ ảnh phòng và ảnh món/đồ uống dùng chung:
 
 ```bash
 git pull
