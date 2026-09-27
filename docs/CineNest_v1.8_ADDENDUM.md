@@ -1,44 +1,69 @@
-# CineNest – hiệu chỉnh đặc tả v1.8
+# CineNest v1.8 Specification Addendum
 
-Tài liệu này bổ sung cho `DacTa_MovieCafeBookingSystem_v1.7.pdf`. Mọi yêu cầu nghiệp vụ v1.7 được giữ nguyên; các điểm dưới đây thay thế thông tin tổ chức và kỹ thuật tương ứng trong bản v1.7.
+This addendum supplements `DacTa_MovieCafeBookingSystem_v1.7.pdf`. The v1.7 business requirements remain in force; the sections below record the final system name, team boundaries, movie data policy, and verification policy used by the implemented release.
 
-## 1. Tên hệ thống
+## Product identity
 
-- Tên chính thức: **CineNest**.
-- Tên mô tả: **CineNest – Movie Café Booking System**.
-- Mã booking: `CN-YYMMDD-XXXX`.
-- Repository: `cinenest-booking-system`.
+- Official name: **CineNest**
+- Descriptive name: **CineNest — Movie Café Booking System**
+- Booking code format: `CN-YYMMDD-XXXX`
+- Repository: `CineNest`
 
-## 2. Trách nhiệm tích hợp
+## Team responsibilities
 
-- **Hải Anh (người 3, nhóm trưởng):** quản lý GitHub, review và merge Pull Request, giải quyết xung đột, giữ `main` chạy được và chuẩn bị bản demo.
-- **Dương (người 1):** tài khoản, phiên, phân quyền, các tiện ích giao diện dùng chung, CI; kiểm tra mọi đề xuất thay đổi schema.
-- Mọi migration được tạo thành file mới. Dương kiểm tra schema; Hải Anh là người merge vào `main`.
-- `staff/schedule.*` thuộc Hải Anh cùng module booking và vận hành lịch.
+- **Hải Anh — Booking and release lead:** booking flows, staff schedule, lifecycle operations, integration, pull-request review, conflict resolution, release demo, and main-branch stability.
+- **Dương — Authentication and shared integration:** accounts, sessions, authorization, employee management, shared frontend utilities, CI, and schema review.
+- **Chúc — Rooms:** room catalogue, availability search, room management, and availability-query optimization.
+- **Thành Lê — Movies and performance:** catalogue, importer, movie preparation, performance scenarios, and benchmark evidence.
+- **Sơn — Menu:** menu catalogue, customer pre-orders, staff add-on orders, and serving status.
+- **Công Thành — Payment and reports:** invoices, payment collection, adjustments, early-ending exceptions, and management reports.
 
-## 3. Ranh giới file để làm song song
+Every database change is added as a new migration. Committed migrations are immutable. Schema changes require review before release integration.
 
-- `backend/src/modules/staff/staff.routes.ts` chỉ gắn bốn router con.
-- Route nhân viên nằm trong module sở hữu: `bookings.staff.routes.ts`, `movies.staff.routes.ts`, `menu.staff.routes.ts`, `payments.staff.routes.ts`.
-- Thành Lê sở hữu `frontend/shared/movie-picker.ts`.
-- Sơn sở hữu `frontend/shared/menu-picker.ts`.
-- Hải Anh điều phối bốn bước trong `frontend/booking.ts` và chỉ gọi hai widget trên.
+## Parallel-development boundaries
 
-## 4. Kho phim The Movies Dataset
+- `backend/src/modules/staff/staff.routes.ts` mounts staff routers owned by their domain modules.
+- Staff routes remain beside the service they operate: `bookings.staff.routes.ts`, `movies.staff.routes.ts`, `menu.staff.routes.ts`, and `payments.staff.routes.ts`.
+- `frontend/shared/movie-picker.ts` owns reusable movie selection.
+- `frontend/shared/menu-picker.ts` owns reusable menu selection.
+- `frontend/booking.ts` coordinates the customer booking steps and consumes both widgets through their public interfaces.
+- Cross-module service signatures are documented in `docs/CONTRACTS.md`.
 
-- Nguồn: The Movies Dataset trên Kaggle, dữ liệu phim từ TMDB.
-- Script `backend/prisma/import-movies.ts` nhập `movies_metadata.csv`, lọc theo thời lượng, lượt đánh giá, poster và mô tả; API luôn phân trang.
-- Mỗi phim nhập lưu `source` và `external_id`; cặp này là duy nhất để chạy lại không tạo trùng và không gộp nhầm phim trùng tên.
-- Khi nguồn không có phân loại tuổi Việt Nam, nhãn là `NR` (chưa phân loại). Quản lý chỉ đổi nhãn khi có thông tin chính xác.
-- File CSV/ZIP gốc không đưa lên GitHub; repository chỉ giữ script và dữ liệu mẫu nhỏ.
+## Movie catalogue policy
 
-## 5. Kiểm thử và hiệu năng
+- The selected source is The Movies Dataset on Kaggle, based on TMDB metadata.
+- `backend/prisma/import-movies.ts` imports `movies_metadata.csv`, filters by runtime, vote count, poster, description, and adult flag, and writes data in batches.
+- Each imported film stores `source` and `external_id`. Their unique combination makes repeated imports idempotent and distinguishes films with the same title.
+- Missing Vietnamese age classifications remain `NR`. A manager may change a rating only after verifying an appropriate source.
+- The large CSV and ZIP files are not committed. The repository contains the importer and small representative samples.
+- Movie list endpoints are paginated so the frontend never loads the complete catalogue at once.
 
-- Vitest + Supertest bao phủ đủ T01–T18, gồm T07, T08 và T13.
-- Playwright có một smoke test cho luồng đăng ký → tìm phòng → đặt phòng bốn bước.
-- `perf/generate_history.py` sinh 10.000 booking lịch sử với seed cố định cho PF01/PF03.
-- Không ghi mục tiêu hiệu năng thành kết quả. Kết quả PF01–PF03 và Lighthouse chỉ được điền sau khi đo thật, kèm cấu hình máy và ngày đo.
+## Verification policy
 
-## 6. Cập nhật Phụ lục B
+- Vitest and Supertest cover authentication, rooms, booking, movies, menu, payment, reporting, and concurrency behavior.
+- Playwright covers customer registration and booking, plus the integrated customer-to-staff invoice flow.
+- Locust records room search, 200-request booking contention, and a full journey ramp to 300 users.
+- Lighthouse records frontend performance, accessibility, best practices, and SEO.
+- Performance targets are never presented as measured results. Reports must include the actual machine, versions, dataset size, run date, load shape, latency, error rate, and business outcome.
 
-API `GET /api/rooms/availability` trả `{ data: { window, rooms } }`. Locust phải lấy danh sách bằng `(response.json().get("data") or {}).get("rooms") or []` như file `perf/locustfile.py` trong repository.
+## Performance API response
+
+`GET /api/rooms/availability` returns:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "window": {},
+    "rooms": []
+  }
+}
+```
+
+Locust reads the room list with:
+
+```python
+(response.json().get("data") or {}).get("rooms") or []
+```
+
+This response contract must remain aligned across the API reference, frontend client, tests, and performance scenarios.

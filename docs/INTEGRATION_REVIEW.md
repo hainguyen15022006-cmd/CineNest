@@ -1,61 +1,81 @@
-# CineNest integration review
+# CineNest Release Integration Review
 
-Review date: 21 September 2026
-Integration branch: `codex/integrate-team-final`
+Review date: 28 September 2026
+Release candidate: `fix/menu-review`
+Target branch: `main`
 
-## Integrated contributions
+## Integrated scope
 
-| Owner | Remote branch | Review result |
-| --- | --- | --- |
-| Dương — authentication and integration | `origin/feat/auth` | Integrated. Login/session, role protection, staff-account management and lockout flows compile and pass automated tests. Database not-found errors are now returned as 404 instead of 500. |
-| Chúc — rooms and availability | `origin/feat/rooms-optimization-and-ui` | Integrated after reconciling the six-guest limit and transaction locking. Availability now uses an index-compatible status predicate, room detail/search/admin interfaces are improved, inactive-room admin detail is supported, and ten dedicated room tests pass. |
-| Hải Anh — booking | `origin/feat/bookings` | Integrated. Customer and staff booking flows, cleaning buffer, duplicate prevention, idempotency, three-active-booking limit, check-in grace period and lifecycle actions pass tests. |
-| Thành Lê — movies and performance | `origin/feat/movies-performance` | Movie catalogue/import and movie preparation are integrated. Concurrency protection was added for movie selection, deactivation and preparation changes. Performance scripts exist, but the evidence package is incomplete; see Remaining submission work. |
-| Sơn — menu and food orders | `origin/feat/menu` | Integrated. Pre-order, add-on orders, price snapshots and service states work. Locks now prevent a food order from being added during checkout and keep menu price/availability validation consistent. |
-| Công Thành — payment, exceptions and reports | `origin/thanh/feature-payments-reports` | Integrated after corrections. Duplicate routes/services and unsupported methods were removed. Checkout supports CASH/TRANSFER, approved adjustments, explicit full collection while an adjustment is pending, and Vietnamese-timezone reports. |
+| Area           | Final behavior                                                                                                                                          |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Authentication | Registration, login, logout, PostgreSQL sessions, role protection, login rate limiting, employee deactivation, and session revocation                   |
+| Rooms          | Active-room catalogue, detail, images, amenities, capacity and price management, indexed availability search, and cleaning intervals                    |
+| Booking        | Customer and walk-in creation, four-step flow, cancellation, schedule, check-in, no-show, mark-used recovery, early ending, and audit history           |
+| Movies         | Paginated catalogue, search and genre filtering, runtime checks, large CSV importer, selection changes, preparation versioning, and manager maintenance |
+| Menu           | Bundled item images, pre-orders, add-on orders, trusted price snapshots, serving states, cancellation, and manager maintenance                          |
+| Payment        | Invoice calculation, food blockers, cash/transfer collection, partial discounts, full waivers, pending-adjustment resolution, and idempotent checkout   |
+| Reports        | Booking, revenue, room-hour, unpaid, and waived reports using Vietnam time                                                                              |
+| Quality        | Backend integration tests, browser E2E flows, Locust scenarios, Lighthouse evidence, build and type checks                                              |
 
-All six member feature branches are integrated into this branch. Chúc's room contribution was merged on 21 September and reconciled with the earlier cross-module concurrency fixes.
+## Integration corrections
 
-## Corrections made during integration
-
-- Removed duplicate payment and manager-report routes that conflicted with the established API.
+- Removed duplicate payment and reporting routes.
 - Restricted payment methods to the database contract: `CASH` and `TRANSFER`.
-- Added explicit handling for collecting the original invoice total while a reduction request is pending; the request is withdrawn with an audit-history record.
+- Added explicit full-amount collection while a reduction request is pending; the pending request is withdrawn with an audit record.
 - Corrected paid invoice display so the remaining amount is zero.
-- Added transaction locks and consistent lock ordering across booking, rooms, movies, menu, adjustments and checkout.
-- Added standard mappings for Prisma conflict, foreign-key, not-found and write-conflict errors.
-- Enforced the agreed maximum of six guests in the customer search and room management UI/API.
-- Corrected report date defaults and rejected reversed date ranges.
-- Added recovery when room, movie, menu availability or menu price changes while a customer or staff member is filling a booking form.
-- Kept inactive rooms visible in the staff schedule when they still have bookings for the selected date.
-- Preserved English user-facing UI text; Vietnamese movie titles remain unchanged.
+- Standardized transaction locking and lock order across booking, rooms, movies, menu, adjustments, and checkout.
+- Mapped Prisma conflicts, foreign-key errors, missing records, and write conflicts to stable HTTP responses.
+- Enforced the maximum capacity of six guests across customer, staff, and manager interfaces.
+- Rejected reversed report date ranges and applied Vietnam-time grouping.
+- Preserved inactive rooms in the staff schedule when they still have bookings.
+- Prevented stale movie-preparation actions from applying after a movie change.
+- Prevented login redirects from returning an authenticated user to the login page.
+- Added persistent room-image and menu-image migrations for existing development databases.
+- Allowed safe bundled `/images/menu/` paths while rejecting insecure HTTP image URLs.
+- Preserved English interface text while leaving Vietnamese movie titles unchanged.
 
 ## Verification result
 
-- Backend automated tests: **64 passed** across authentication, booking, rooms, movies, menu and checkout/report suites.
-- Browser integration tests: **2 passed**: the customer four-step booking flow and the full customer-to-staff invoice flow.
-- Backend and frontend TypeScript checks: passed.
-- Frontend production build: passed; all configured pages were generated.
-- Git whitespace/error check: passed.
+| Check                     | Result                                                                     |
+| ------------------------- | -------------------------------------------------------------------------- |
+| Backend tests             | 65 passed across 7 files                                                   |
+| Browser integration       | 2 passed in Chromium                                                       |
+| Backend TypeScript        | Passed                                                                     |
+| Frontend TypeScript       | Passed                                                                     |
+| Frontend production build | Passed; all configured pages generated                                     |
+| Prisma migrations         | 5 migrations found and applied                                             |
+| Menu assets               | 15 source images and 15 built images verified                              |
+| Git whitespace check      | Passed                                                                     |
+| Merge relationship        | `main` is an ancestor of the release candidate; no branch-content conflict |
+
+The two browser flows cover customer registration and four-step booking, plus an integrated journey from movie and food selection through staff preparation, serving, invoice calculation, and payment.
 
 ## Requirements coverage
 
-The integrated application contains the three required interfaces:
+### Standard requirements
 
-- Customer: register/login, search rooms, four-step booking, optional movie, food pre-order, booking list/detail and cancellation.
-- Staff: daily schedule, overdue filter and search, walk-in booking, check-in/no-show/mark-used, movie preparation, food service, early ending, adjustment request and payment.
-- Manager: staff accounts, rooms, movies, menu, adjustment decisions and operational/revenue reports.
+- Complete customer, staff, and manager interfaces.
+- Essential room search, booking, lifecycle, food, and payment functions.
+- Validation, role protection, responsive interface, and persistent database storage.
+- Reproducible setup, shared sample data, and documented demo accounts.
 
-The main advanced engineering features are implemented: database overlap exclusion, transaction locks, idempotency, session/rate-limit controls, indexes, pagination/cache support, Locust scenarios and browser performance artifacts.
+### Advanced requirements
 
-## Remaining submission work
+- Database exclusion constraint and application row locking for overlapping bookings.
+- Idempotency for booking and checkout.
+- Pagination and indexed availability queries for larger datasets.
+- A movie importer that supports thousands of records without duplicate source IDs.
+- A 10,000-booking history generator.
+- Locust PF01–PF03 measurements, including 200-way contention and a 300-user journey.
+- Lighthouse before/after evidence.
+- Automated integration and real-browser regression tests.
 
-These items do not block the application from running, but they are not yet sufficient as final assessment evidence:
+## Known limitations
 
-1. Re-run and retain raw evidence for PF01 and PF03. Only PF02 raw CSV files are currently committed.
-2. Reconcile the PF02 result: `perf/reports/RESULTS.md` states a 1.5-second booking p95, while the tracked `pf02_stats.csv` and `docs/performance/PF02_2026-09-16.md` show 9.5 seconds from another run. Label each machine/run clearly and do not present 1.5 seconds without its source CSV.
-3. Run Lighthouse five times on the home, room-results and room-detail pages, then report the median for each page. The repository currently contains one home-page before/after JSON pair.
-4. Add the final deployed URL, ERD/database diagram, group presentation slides and demo/backup instructions. The repository currently contains only the movies/performance member slide deck.
-5. `npm audit --omit=dev` currently reports four high-severity advisories through Prisma tooling dependencies. Do not run `npm audit fix --force`, because its proposed major downgrade can break the Prisma 7 project. Record this as a known toolchain issue and reassess against a compatible Prisma update before submission.
+- Online payment gateway integration is outside the course scope. Staff record cash or bank-transfer settlement at the café.
+- The system performs the final conflict check at confirmation and does not create a temporary five-minute hold while the customer is browsing.
+- Room images are external HTTPS resources and depend on their source hosts. Menu images are bundled with the application.
+- The Kaggle source CSV is intentionally excluded from Git; each environment imports it separately when a large catalogue is required.
+- `npm audit` currently reports advisories in Prisma's tooling dependency chain. The automated remediation proposes a breaking Prisma version change, so it was not applied immediately before release. The application uses PostgreSQL and does not use the flagged MySQL driver at runtime.
 
-The current code is a stable integration candidate. It should be treated as feature-frozen while the team completes the evidence and presentation items above.
+No blocking functional issue remained after the final review. The release candidate was suitable for merging into `main` after the team completed its manual presentation smoke test.
