@@ -8,7 +8,6 @@
 import { currentUser, logout, type Me } from "./auth";
 import { basePath } from "./api";
 import { label } from "./format";
-import "./styles.css";
 
 const NAV: { role: "GUEST" | "CUSTOMER" | "STAFF" | "MANAGER"; items: [string, string][] }[] = [
   { role: "GUEST", items: [["Find a room", "index.html"], ["Sign in", "login.html"], ["Create account", "register.html"]] },
